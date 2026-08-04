@@ -1,64 +1,110 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import '@/global.css';
-
-import { Platform } from 'react-native';
+// Sehatica Design System — Colors, Typography, Spacing
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#111827',
+    textSecondary: '#6B7280',
+    textMuted: '#9CA3AF',
+    background: '#F9FAFB',
+    backgroundCard: '#FFFFFF',
+    backgroundElement: '#F3F4F6',
+    backgroundSelected: '#DCFCE7',
+    primary: '#16A34A',
+    primaryLight: '#DCFCE7',
+    primaryDark: '#15803D',
+    primaryGradientStart: '#16A34A',
+    primaryGradientEnd: '#4ADE80',
+    border: '#E5E7EB',
+    borderLight: '#F3F4F6',
+    amber: '#F59E0B',
+    amberLight: '#FFFBEB',
+    blue: '#3B82F6',
+    blueLight: '#EFF6FF',
+    red: '#EF4444',
+    redLight: '#FEF2F2',
+    purple: '#A855F7',
+    purpleLight: '#FAF5FF',
+    whatsapp: '#25D366',
+    shadow: 'rgba(0,0,0,0.06)',
+    tabBar: '#FFFFFF',
+    tabBarBorder: '#F3F4F6',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#F9FAFB',
+    textSecondary: '#9CA3AF',
+    textMuted: '#6B7280',
+    background: '#111827',
+    backgroundCard: '#1F2937',
+    backgroundElement: '#374151',
+    backgroundSelected: '#052e16',
+    primary: '#16A34A',
+    primaryLight: '#052e16',
+    primaryDark: '#15803D',
+    primaryGradientStart: '#16A34A',
+    primaryGradientEnd: '#4ADE80',
+    border: '#374151',
+    borderLight: '#1F2937',
+    amber: '#F59E0B',
+    amberLight: '#1c1400',
+    blue: '#3B82F6',
+    blueLight: '#0c1a35',
+    red: '#EF4444',
+    redLight: '#1a0000',
+    purple: '#A855F7',
+    purpleLight: '#1a0035',
+    whatsapp: '#25D366',
+    shadow: 'rgba(0,0,0,0.3)',
+    tabBar: '#1F2937',
+    tabBarBorder: '#374151',
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColors = typeof Colors.light;
+
+import { Platform } from 'react-native';
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
+    sans: 'System',
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    mono: 'Courier',
   },
   default: {
     sans: 'normal',
-    serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
   },
 });
 
 export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  base: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
+} as const;
+
+export const BorderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  full: 9999,
+} as const;
+
+export const FontSize = {
+  xs: 10,
+  sm: 12,
+  base: 14,
+  md: 16,
+  lg: 18,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
