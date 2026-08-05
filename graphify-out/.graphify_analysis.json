@@ -1,0 +1,657 @@
+{
+  "communities": {
+    "0": [
+      "src_app_auth_register",
+      "src_app_auth_register_styles",
+      "src_app_tabs_index",
+      "src_app_tabs_index_styles",
+      "src_app_tabs_records",
+      "src_app_tabs_records_addtype",
+      "src_app_tabs_records_filters",
+      "src_app_tabs_records_recordsscreen",
+      "src_app_tabs_records_styles",
+      "src_app_tabs_schedule",
+      "src_app_tabs_schedule_schedulescreen",
+      "src_app_tabs_schedule_styles",
+      "src_components_medical_record_card",
+      "src_components_medical_record_card_medicalrecordcard",
+      "src_components_medical_record_card_medicalrecordcardprops",
+      "src_components_medical_record_card_styles",
+      "src_components_medical_record_card_typeconfig",
+      "src_components_schedule_item",
+      "src_components_schedule_item_colorschemes",
+      "src_components_schedule_item_getcolorscheme",
+      "src_components_schedule_item_scheduleitemcard",
+      "src_components_schedule_item_scheduleitemcardprops",
+      "src_components_schedule_item_styles",
+      "src_components_schedule_item_typeicon",
+      "src_constants_theme_borderradius",
+      "src_constants_theme_colors",
+      "src_constants_theme_fontsize",
+      "src_services_records_service_recordsservice",
+      "src_services_schedule_service_scheduleservice",
+      "src_services_verif_service_homeservice",
+      "src_types_index_medicalrecord",
+      "src_types_index_recordtype",
+      "src_types_index_scheduleitem"
+    ],
+    "1": [
+      "src_app_explore",
+      "src_app_explore_styles",
+      "src_app_explore_tabtwoscreen",
+      "src_components_external_link",
+      "src_components_external_link_externallink",
+      "src_components_external_link_props",
+      "src_components_hint_row",
+      "src_components_hint_row_hintrow",
+      "src_components_hint_row_hintrowprops",
+      "src_components_hint_row_styles",
+      "src_components_themed_text",
+      "src_components_themed_text_styles",
+      "src_components_themed_text_themedtext",
+      "src_components_themed_text_themedtextprops",
+      "src_components_themed_view",
+      "src_components_themed_view_themedview",
+      "src_components_themed_view_themedviewprops",
+      "src_components_ui_collapsible",
+      "src_components_ui_collapsible_collapsible",
+      "src_components_ui_collapsible_styles",
+      "src_components_web_badge",
+      "src_components_web_badge_styles",
+      "src_components_web_badge_webbadge",
+      "src_constants_theme",
+      "src_constants_theme_bottomtabinset",
+      "src_constants_theme_fonts",
+      "src_constants_theme_maxcontentwidth",
+      "src_constants_theme_spacing",
+      "src_constants_theme_themecolors",
+      "src_hooks_use_color_scheme",
+      "src_hooks_use_theme",
+      "src_hooks_use_theme_usetheme"
+    ],
+    "2": [
+      "src_app_tabs_doctor",
+      "src_app_tabs_doctor_doctorscreen",
+      "src_app_tabs_doctor_specialties",
+      "src_app_tabs_doctor_styles",
+      "src_constants_api",
+      "src_constants_api_api_base_url",
+      "src_constants_api_api_endpoints",
+      "src_constants_api_getbaseurl",
+      "src_services_api",
+      "src_services_api_api",
+      "src_services_api_apierror",
+      "src_services_api_apierror_constructor",
+      "src_services_api_refreshaccesstoken",
+      "src_services_api_request",
+      "src_services_auth_service",
+      "src_services_doctor_service",
+      "src_services_doctor_service_doctorservice",
+      "src_services_heally_service",
+      "src_services_heally_service_chatresponse",
+      "src_services_records_service",
+      "src_services_schedule_service",
+      "src_services_verif_service",
+      "src_services_verif_service_verifservice",
+      "src_types_index",
+      "src_types_index_apiresponse",
+      "src_types_index_authstate",
+      "src_types_index_dailyinsight",
+      "src_types_index_dashboarddata",
+      "src_types_index_doctor",
+      "src_types_index_scheduletype",
+      "src_types_index_verifrequest"
+    ],
+    "3": [
+      "app",
+      "app_adaptiveicon_backgroundcolor",
+      "app_adaptiveicon_backgroundimage",
+      "app_adaptiveicon_foregroundimage",
+      "app_adaptiveicon_monochromeimage",
+      "app_android_adaptiveicon",
+      "app_android_predictivebackgestureenabled",
+      "app_experiments_reactcompiler",
+      "app_experiments_typedroutes",
+      "app_expo",
+      "app_expo_android",
+      "app_expo_experiments",
+      "app_expo_icon",
+      "app_expo_ios",
+      "app_expo_name",
+      "app_expo_orientation",
+      "app_expo_scheme",
+      "app_expo_slug",
+      "app_expo_userinterfacestyle",
+      "app_expo_version",
+      "app_expo_web",
+      "app_ios_icon",
+      "app_web_favicon",
+      "app_web_output"
+    ],
+    "4": [
+      "src_app_tabs_heally",
+      "src_app_tabs_heally_heallyscreen",
+      "src_app_tabs_heally_styles",
+      "src_app_tabs_heally_suggestions",
+      "src_components_chat_bubble",
+      "src_components_chat_bubble_chatbubble",
+      "src_components_chat_bubble_chatbubbleprops",
+      "src_components_chat_bubble_rendercontent",
+      "src_components_chat_bubble_styles",
+      "src_components_typing_indicator",
+      "src_components_typing_indicator_styles",
+      "src_components_typing_indicator_typingindicator",
+      "src_components_verif_badge",
+      "src_components_verif_badge_requestverifbutton",
+      "src_components_verif_badge_requestverifbuttonprops",
+      "src_components_verif_badge_styles",
+      "src_components_verif_badge_verifbadge",
+      "src_components_verif_badge_verifbadgeprops",
+      "src_services_heally_service_heallyservice",
+      "src_store_heally_store",
+      "src_store_heally_store_heallystore",
+      "src_store_heally_store_useheallystore",
+      "src_types_index_chatmessage",
+      "src_types_index_verifstatus"
+    ],
+    "5": [
+      "app_expo_plugins",
+      "expo_router",
+      "package_dependencies_expo_router",
+      "src_app_auth_layout",
+      "src_app_auth_layout_authlayout",
+      "src_app_index",
+      "src_app_index_index",
+      "src_app_tabs_layout",
+      "src_app_tabs_layout_styles",
+      "src_app_tabs_layout_tabslayout",
+      "src_components_app_tabs",
+      "src_components_app_tabs_bottomtabbar",
+      "src_components_app_tabs_styles",
+      "src_components_app_tabs_tab",
+      "src_components_app_tabs_tabs",
+      "src_components_app_tabs_width_screen_width",
+      "src_components_heally_fab",
+      "src_components_heally_fab_heallyfab",
+      "src_components_heally_fab_heallyfabprops",
+      "src_components_heally_fab_styles"
+    ],
+    "6": [
+      "package",
+      "package_devdependencies",
+      "package_devdependencies_playwright_test",
+      "package_devdependencies_types_react",
+      "package_devdependencies_typescript",
+      "package_main",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_android",
+      "package_scripts_ios",
+      "package_scripts_lint",
+      "package_scripts_reset_project",
+      "package_scripts_start",
+      "package_scripts_web",
+      "package_version",
+      "playwright_test",
+      "types_react",
+      "typescript"
+    ],
+    "7": [
+      "src_app_auth_login",
+      "src_app_auth_login_loginscreen",
+      "src_app_auth_login_styles",
+      "src_app_auth_register_registerscreen",
+      "src_app_layout",
+      "src_app_layout_authguard",
+      "src_app_layout_queryclient",
+      "src_app_layout_rootlayout",
+      "src_app_tabs_index_homescreen",
+      "src_services_auth_service_authservice",
+      "src_services_auth_service_loginresponse",
+      "src_store_auth_store",
+      "src_store_auth_store_authstore",
+      "src_store_auth_store_storage",
+      "src_store_auth_store_storage_keys",
+      "src_store_auth_store_useauthstore",
+      "src_types_index_user"
+    ],
+    "8": [
+      "ref_assets",
+      "ref_expo_env_d_ts",
+      "ref_expo_tsconfig_base",
+      "ref_expo_types_ts",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_extends",
+      "tsconfig_include",
+      "tsconfig_paths_assets"
+    ],
+    "9": [
+      "expo_constants",
+      "expo_ui",
+      "package_dependencies",
+      "package_dependencies_expo_constants",
+      "package_dependencies_expo_ui",
+      "package_dependencies_react_native",
+      "package_dependencies_react_native_web",
+      "react_native",
+      "react_native_web"
+    ],
+    "10": [
+      "scripts_reset_project",
+      "scripts_reset_project_exampledirpath",
+      "scripts_reset_project_fs",
+      "scripts_reset_project_movedirectories",
+      "scripts_reset_project_olddirs",
+      "scripts_reset_project_path",
+      "scripts_reset_project_readline",
+      "scripts_reset_project_rl",
+      "scripts_reset_project_root"
+    ],
+    "11": [
+      "src_components_animated_icon",
+      "src_components_animated_icon_animatedicon",
+      "src_components_animated_icon_animatedsplashoverlay",
+      "src_components_animated_icon_glowkeyframe",
+      "src_components_animated_icon_keyframe",
+      "src_components_animated_icon_logokeyframe",
+      "src_components_animated_icon_styles"
+    ],
+    "12": [
+      "src_components_animated_icon_web",
+      "src_components_animated_icon_web_animatedicon",
+      "src_components_animated_icon_web_animatedsplashoverlay",
+      "src_components_animated_icon_web_glowkeyframe",
+      "src_components_animated_icon_web_keyframe",
+      "src_components_animated_icon_web_logokeyframe",
+      "src_components_animated_icon_web_styles"
+    ],
+    "13": [
+      "assets_expo_icon_assets_expo_symbol_2_svg",
+      "assets_images_android_icon_foreground_png",
+      "assets_images_icon_png"
+    ],
+    "14": [
+      "agents_md",
+      "claude_md"
+    ],
+    "15": [
+      "assets_images_tutorial_web_png",
+      "readme_md"
+    ],
+    "16": [
+      "expo_av",
+      "package_dependencies_expo_av"
+    ],
+    "17": [
+      "expo_blur",
+      "package_dependencies_expo_blur"
+    ],
+    "18": [
+      "expo",
+      "package_dependencies_expo"
+    ],
+    "19": [
+      "expo_device",
+      "package_dependencies_expo_device"
+    ],
+    "20": [
+      "expo_font",
+      "package_dependencies_expo_font"
+    ],
+    "21": [
+      "expo_glass_effect",
+      "package_dependencies_expo_glass_effect"
+    ],
+    "22": [
+      "expo_google_fonts_inter",
+      "package_dependencies_expo_google_fonts_inter"
+    ],
+    "23": [
+      "expo_google_fonts_playfair_display",
+      "package_dependencies_expo_google_fonts_playfair_display"
+    ],
+    "24": [
+      "expo_image",
+      "package_dependencies_expo_image"
+    ],
+    "25": [
+      "expo_image_picker",
+      "package_dependencies_expo_image_picker"
+    ],
+    "26": [
+      "expo_linear_gradient",
+      "package_dependencies_expo_linear_gradient"
+    ],
+    "27": [
+      "expo_linking",
+      "package_dependencies_expo_linking"
+    ],
+    "28": [
+      "expo_secure_store",
+      "package_dependencies_expo_secure_store"
+    ],
+    "29": [
+      "expo_splash_screen",
+      "package_dependencies_expo_splash_screen"
+    ],
+    "30": [
+      "expo_status_bar",
+      "package_dependencies_expo_status_bar"
+    ],
+    "31": [
+      "expo_symbols",
+      "package_dependencies_expo_symbols"
+    ],
+    "32": [
+      "expo_system_ui",
+      "package_dependencies_expo_system_ui"
+    ],
+    "33": [
+      "expo_web_browser",
+      "package_dependencies_expo_web_browser"
+    ],
+    "34": [
+      "package_dependencies_react",
+      "react"
+    ],
+    "35": [
+      "package_dependencies_react_dom",
+      "react_dom"
+    ],
+    "36": [
+      "package_dependencies_react_native_gesture_handler",
+      "react_native_gesture_handler"
+    ],
+    "37": [
+      "package_dependencies_react_native_markdown_display",
+      "react_native_markdown_display"
+    ],
+    "38": [
+      "package_dependencies_react_native_reanimated",
+      "react_native_reanimated"
+    ],
+    "39": [
+      "package_dependencies_react_native_safe_area_context",
+      "react_native_safe_area_context"
+    ],
+    "40": [
+      "package_dependencies_react_native_screens",
+      "react_native_screens"
+    ],
+    "41": [
+      "package_dependencies_react_native_worklets",
+      "react_native_worklets"
+    ],
+    "42": [
+      "package_dependencies_tanstack_react_query",
+      "tanstack_react_query"
+    ],
+    "43": [
+      "package_dependencies_zustand",
+      "zustand"
+    ],
+    "44": [
+      "src_hooks_use_color_scheme_web",
+      "src_hooks_use_color_scheme_web_usecolorscheme"
+    ],
+    "45": [
+      "assets_expo_icon_assets_grid_png"
+    ],
+    "46": [
+      "assets_images_android_icon_background_png"
+    ],
+    "47": [
+      "assets_images_android_icon_monochrome_png"
+    ],
+    "48": [
+      "assets_images_expo_badge_png"
+    ],
+    "49": [
+      "assets_images_expo_badge_white_png"
+    ],
+    "50": [
+      "assets_images_expo_logo_png"
+    ],
+    "51": [
+      "assets_images_favicon_png"
+    ],
+    "52": [
+      "assets_images_logo_glow_png"
+    ],
+    "53": [
+      "assets_images_react_logo_png"
+    ],
+    "54": [
+      "assets_images_splash_icon_png"
+    ],
+    "55": [
+      "assets_images_tabicons_explore_png"
+    ],
+    "56": [
+      "assets_images_tabicons_home_3x_png"
+    ],
+    "57": [
+      "assets_images_tabicons_home_png"
+    ],
+    "58": [
+      "test_debug"
+    ],
+    "59": [
+      "tests_ui_redesign_spec"
+    ]
+  },
+  "cohesion": {
+    "0": 0.10606060606060606,
+    "1": 0.1431451612903226,
+    "2": 0.13978494623655913,
+    "3": 0.08333333333333333,
+    "4": 0.12318840579710146,
+    "5": 0.11578947368421053,
+    "6": 0.10526315789473684,
+    "7": 0.15441176470588236,
+    "8": 0.15384615384615385,
+    "9": 0.2222222222222222,
+    "10": 0.2222222222222222,
+    "11": 0.2857142857142857,
+    "12": 0.2857142857142857,
+    "13": 0.6666666666666666,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_constants_theme_colors",
+      "label": "Colors",
+      "degree": 17
+    },
+    {
+      "id": "src_constants_theme_spacing",
+      "label": "Spacing",
+      "degree": 16
+    },
+    {
+      "id": "src_constants_theme_borderradius",
+      "label": "BorderRadius",
+      "degree": 14
+    },
+    {
+      "id": "app_expo",
+      "label": "expo",
+      "degree": 13
+    },
+    {
+      "id": "src_constants_theme_fontsize",
+      "label": "FontSize",
+      "degree": 13
+    },
+    {
+      "id": "expo_router",
+      "label": "expo-router",
+      "degree": 11
+    },
+    {
+      "id": "src_store_auth_store_useauthstore",
+      "label": "useAuthStore",
+      "degree": 10
+    },
+    {
+      "id": "src_hooks_use_theme_usetheme",
+      "label": "useTheme()",
+      "degree": 9
+    },
+    {
+      "id": "src_types_index_chatmessage",
+      "label": "ChatMessage",
+      "degree": 8
+    },
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "plugins",
+      "target": "expo-router",
+      "source_files": [
+        "app.json",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "extends",
+      "why": "connects across different repos/directories; peripheral node `plugins` unexpectedly reaches hub `expo-router`"
+    },
+    {
+      "source": "Android Icon Foreground",
+      "target": "Expo Symbol SVG",
+      "source_files": [
+        "assets/images/android-icon-foreground.png",
+        "assets/expo.icon/Assets/expo-symbol 2.svg"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "App Icon",
+      "target": "Expo Symbol SVG",
+      "source_files": [
+        "assets/images/icon.png",
+        "assets/expo.icon/Assets/expo-symbol 2.svg"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "LoginScreen()",
+      "target": "useAuthStore",
+      "source_files": [
+        "src/app/(auth)/login.tsx",
+        "src/store/auth-store.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "peripheral node `LoginScreen()` unexpectedly reaches hub `useAuthStore`"
+    },
+    {
+      "source": "RegisterScreen()",
+      "target": "useAuthStore",
+      "source_files": [
+        "src/app/(auth)/register.tsx",
+        "src/store/auth-store.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "peripheral node `RegisterScreen()` unexpectedly reaches hub `useAuthStore`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `expo-router` connect `Navigation and Layouts` to `UI Components and Screens`, `Theming and UI Elements`, `Authentication and State`?",
+      "why": "High betweenness centrality (0.383) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `Core Mobile Dependencies` to `Navigation and Layouts`, `Project Dependencies and Scripts`, `Audio and Video`, `Blur Effects`, `Expo Core`, `Device Information`, `Font Management`, `Glass UI Effects`, `Inter Font`, `Playfair Display Font`, `Image Component`, `Image Picker`, `Linear Gradient`, `Deep Linking`, `Secure Storage`, `Splash Screen`, `Status Bar`, `SF Symbols`, `System UI`, `Web Browser`, `React Core`, `React DOM`, `Gesture Handling`, `Markdown Rendering`, `Reanimated Library`, `Safe Area Management`, `Screen Management`, `Worklets Library`, `Data Fetching`, `State Management`?",
+      "why": "High betweenness centrality (0.348) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `expo-router` connect `Navigation and Layouts` to `Core Mobile Dependencies`?",
+      "why": "High betweenness centrality (0.289) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `name`, `slug`, `version` to the rest of the system?",
+      "why": "145 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `UI Components and Screens` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.10606060606060606 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Theming and UI Elements` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1431451612903226 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Doctor Feature and API` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.13978494623655913 - nodes in this community are weakly interconnected."
+    }
+  ]
+}
