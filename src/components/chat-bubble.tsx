@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 32,
     height: 32,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -165,9 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   bubble: {
-    borderRadius: BorderRadius.xl,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: BorderRadius.xxxl,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   bubbleUser: {
     borderBottomRightRadius: 4,
@@ -179,10 +179,12 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: FontSize.sm,
     lineHeight: 20,
+    fontFamily: 'Inter_400Regular',
   },
   timestamp: {
     fontSize: FontSize.xs,
     paddingHorizontal: 4,
+    fontFamily: 'Inter_400Regular',
   },
   timestampUser: {
     textAlign: 'right',

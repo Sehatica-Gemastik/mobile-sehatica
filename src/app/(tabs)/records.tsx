@@ -214,28 +214,31 @@ export default function RecordsScreen() {
             {/* Type selector */}
             <View style={styles.typeGrid}>
               {[
-                { type: 'text', icon: '📝', label: 'Teks/Catatan' },
-                { type: 'image', icon: '📷', label: 'Foto/OCR' },
-                { type: 'voice', icon: '🎤', label: 'Rekam Suara' },
-              ].map(({ type, icon, label }) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setAddType(type as AddType)}
-                  style={[
-                    styles.typeCard,
-                    {
-                      borderColor: addType === type ? colors.primary : colors.border,
-                      backgroundColor: addType === type ? colors.primaryLight : colors.backgroundElement,
-                    },
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: 24 }}>{icon}</Text>
-                  <Text style={[styles.typeLabel, { color: addType === type ? colors.primary : colors.textSecondary }]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                { type: 'text', icon: '📝', label: 'Teks', activeBg: '#F3F4F6', activeBorder: '#D1D5DB', activeText: '#4B5563' }, // gray
+                { type: 'image', icon: '📷', label: 'Foto/OCR', activeBg: '#FAF5FF', activeBorder: '#A855F7', activeText: '#7E22CE' }, // purple
+                { type: 'voice', icon: '🎤', label: 'Rekam Suara', activeBg: '#FEF2F2', activeBorder: '#EF4444', activeText: '#B91C1C' }, // red
+              ].map(({ type, icon, label, activeBg, activeBorder, activeText }) => {
+                const isActive = addType === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => setAddType(type as AddType)}
+                    style={[
+                      styles.typeCard,
+                      {
+                        borderColor: isActive ? activeBorder : 'transparent',
+                        backgroundColor: isActive ? activeBg : colors.backgroundElement,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 24 }}>{icon}</Text>
+                    <Text style={[styles.typeLabel, { color: isActive ? activeText : colors.textSecondary }]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Text form */}
@@ -337,38 +340,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: Spacing.lg, paddingTop: Spacing.base, paddingBottom: Spacing.sm,
   },
-  headerTitle: { fontSize: FontSize.xl, fontWeight: '800' },
-  headerSub: { fontSize: FontSize.xs, marginTop: 2 },
+  headerTitle: { fontSize: FontSize.xxl, fontFamily: 'PlayfairDisplay_600SemiBold' },
+  headerSub: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
   addBtn: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: BorderRadius.full,
     alignItems: 'center', justifyContent: 'center',
   },
-  addBtnText: { color: 'white', fontSize: 22, fontWeight: '700' },
+  addBtnText: { color: 'white', fontSize: 22, fontFamily: 'Inter_700Bold' },
   filtersScroll: { paddingBottom: 12 },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: Spacing.lg },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: BorderRadius.full },
-  filterText: { fontSize: FontSize.xs, fontWeight: '600' },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full },
+  filterText: { fontSize: FontSize.xs, fontFamily: 'Inter_500Medium' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
   emptyState: { alignItems: 'center', gap: 12, paddingTop: 60 },
-  emptyTitle: { fontSize: FontSize.md, fontWeight: '700' },
-  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center' },
+  emptyTitle: { fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
+  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center', fontFamily: 'Inter_400Regular' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard: { borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl, padding: Spacing.xl, paddingBottom: 40, gap: Spacing.base },
   modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB', alignSelf: 'center', marginBottom: 4 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: FontSize.lg, fontWeight: '700' },
+  modalTitle: { fontSize: FontSize.lg, fontFamily: 'PlayfairDisplay_600SemiBold' },
   closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   typeGrid: { flexDirection: 'row', gap: 10 },
-  typeCard: { flex: 1, alignItems: 'center', gap: 8, padding: 12, borderRadius: BorderRadius.xl, borderWidth: 2 },
-  typeLabel: { fontSize: FontSize.xs, fontWeight: '600', textAlign: 'center' },
+  typeCard: { flex: 1, alignItems: 'center', gap: 8, padding: 12, borderRadius: BorderRadius.lg, borderWidth: 2 },
+  typeLabel: { fontSize: FontSize.xs, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
   formGroup: { gap: 10 },
-  textInput: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm },
-  textArea: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm, minHeight: 100 },
+  textInput: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm, fontFamily: 'Inter_400Regular' },
+  textArea: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm, fontFamily: 'Inter_400Regular', minHeight: 100 },
   uploadZone: { borderWidth: 2, borderStyle: 'dashed', borderRadius: BorderRadius.xl, padding: Spacing.xl },
   uploadContent: { alignItems: 'center', gap: 8 },
-  uploadText: { fontSize: FontSize.sm, fontWeight: '600' },
-  uploadHint: { fontSize: FontSize.xs, textAlign: 'center' },
-  saveBtn: { paddingVertical: 14, borderRadius: BorderRadius.lg, alignItems: 'center' },
-  saveBtnText: { color: 'white', fontSize: FontSize.md, fontWeight: '700' },
+  uploadText: { fontSize: FontSize.sm, fontFamily: 'Inter_600SemiBold' },
+  uploadHint: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: 'Inter_400Regular' },
+  saveBtn: { paddingVertical: 14, borderRadius: BorderRadius.full, alignItems: 'center' },
+  saveBtnText: { color: 'white', fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
 });

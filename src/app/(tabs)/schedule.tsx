@@ -156,7 +156,7 @@ export default function ScheduleScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.aiInfo, { backgroundColor: colors.primaryLight }]}>
+            <View style={[styles.aiInfo, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
               <Text style={{ fontSize: 28 }}>🤖</Text>
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={[styles.aiInfoTitle, { color: colors.text }]}>Heally akan membuat jadwal berdasarkan:</Text>
@@ -167,7 +167,7 @@ export default function ScheduleScreen() {
                   'Pola makan dan aktivitas ideal',
                 ].map((item, i) => (
                   <View key={i} style={styles.aiPoint}>
-                    <Text style={{ color: colors.primary, fontSize: 12 }}>✓</Text>
+                    <Text style={{ color: colors.accent, fontSize: 12 }}>✓</Text>
                     <Text style={[styles.aiPointText, { color: colors.textSecondary }]}>{item}</Text>
                   </View>
                 ))}
@@ -204,39 +204,39 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: Spacing.sm, marginBottom: 12 },
-  headerTitle: { fontSize: FontSize.xl, fontWeight: '800' },
-  headerDate: { fontSize: FontSize.xs, marginTop: 2 },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: BorderRadius.md },
-  aiBtnText: { color: 'white', fontSize: FontSize.xs, fontWeight: '700' },
+  headerTitle: { fontSize: FontSize.xxl, fontFamily: 'PlayfairDisplay_600SemiBold' },
+  headerDate: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingVertical: 10, borderRadius: BorderRadius.full },
+  aiBtnText: { color: 'white', fontSize: FontSize.xs, fontFamily: 'Inter_700Bold' },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   progressBarBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: 8, borderRadius: 4 },
-  progressPct: { fontSize: FontSize.sm, fontWeight: '700', minWidth: 36, textAlign: 'right' },
-  progressLabel: { fontSize: FontSize.xs },
+  progressPct: { fontSize: FontSize.sm, fontFamily: 'Inter_700Bold', minWidth: 36, textAlign: 'right' },
+  progressLabel: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
   categories: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  categoryPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: BorderRadius.full },
-  categoryCount: { fontSize: FontSize.xs, fontWeight: '600' },
+  categoryPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: BorderRadius.full },
+  categoryCount: { fontSize: FontSize.xs, fontFamily: 'Inter_600SemiBold' },
   itemsList: { gap: 8 },
   emptyState: { alignItems: 'center', gap: 12, paddingTop: 60 },
-  emptyTitle: { fontSize: FontSize.md, fontWeight: '700' },
-  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center', paddingHorizontal: Spacing.xl },
-  emptyBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: BorderRadius.lg },
-  emptyBtnText: { color: 'white', fontWeight: '700' },
+  emptyTitle: { fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
+  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center', paddingHorizontal: Spacing.xl, fontFamily: 'Inter_400Regular' },
+  emptyBtn: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: BorderRadius.full },
+  emptyBtnText: { color: 'white', fontFamily: 'Inter_700Bold' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: { borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl, padding: Spacing.xl, paddingBottom: 40, gap: Spacing.base },
+  modalCard: { borderTopLeftRadius: BorderRadius.xxxl, borderTopRightRadius: BorderRadius.xxxl, padding: Spacing.xl, paddingBottom: 40, gap: Spacing.base },
   modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB', alignSelf: 'center', marginBottom: 4 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: FontSize.lg, fontWeight: '700' },
+  modalTitle: { fontSize: FontSize.lg, fontFamily: 'PlayfairDisplay_600SemiBold' },
   closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  aiInfo: { flexDirection: 'row', gap: 12, padding: Spacing.base, borderRadius: BorderRadius.xl, alignItems: 'flex-start' },
-  aiInfoTitle: { fontSize: FontSize.sm, fontWeight: '600', marginBottom: 4 },
+  aiInfo: { flexDirection: 'row', gap: 12, padding: Spacing.base, borderRadius: BorderRadius.xl, alignItems: 'flex-start', borderWidth: 1 },
+  aiInfoTitle: { fontSize: FontSize.sm, fontFamily: 'Inter_600SemiBold', marginBottom: 4 },
   aiPoint: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  aiPointText: { fontSize: FontSize.xs },
-  aiDisclaimer: { fontSize: FontSize.xs, textAlign: 'center' },
-  generateBtn: { paddingVertical: 14, borderRadius: BorderRadius.lg, alignItems: 'center' },
-  generateBtnText: { color: 'white', fontWeight: '700', fontSize: FontSize.sm },
+  aiPointText: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
+  aiDisclaimer: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: 'Inter_400Regular' },
+  generateBtn: { paddingVertical: 14, borderRadius: BorderRadius.full, alignItems: 'center', shadowColor: '#171717', shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
+  generateBtnText: { color: 'white', fontFamily: 'Inter_700Bold', fontSize: FontSize.sm },
   cancelBtn: { paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText: { fontSize: FontSize.sm },
+  cancelBtnText: { fontSize: FontSize.sm, fontFamily: 'Inter_500Medium' },
 });

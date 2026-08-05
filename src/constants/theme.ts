@@ -1,21 +1,21 @@
 // Sehatica Design System — Colors, Typography, Spacing
-
+import { Platform } from 'react-native';
 export const Colors = {
   light: {
-    text: '#111827',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
-    background: '#F9FAFB',
+    text: '#171717',
+    textSecondary: '#52525B', // zinc-600
+    textMuted: '#A1A1AA', // zinc-400
+    background: '#FFFFFF',
     backgroundCard: '#FFFFFF',
-    backgroundElement: '#F3F4F6',
-    backgroundSelected: '#DCFCE7',
-    primary: '#16A34A',
-    primaryLight: '#DCFCE7',
-    primaryDark: '#15803D',
-    primaryGradientStart: '#16A34A',
-    primaryGradientEnd: '#4ADE80',
-    border: '#E5E7EB',
-    borderLight: '#F3F4F6',
+    backgroundElement: '#F4F4F5', // zinc-100
+    backgroundSelected: '#E4E4E7', // zinc-200
+    primary: '#171717',
+    primaryLight: '#F4F4F5',
+    primaryDark: '#0A0A0A',
+    primaryGradientStart: '#171717',
+    primaryGradientEnd: '#3F3F46',
+    border: '#E4E4E7', // zinc-200
+    borderLight: '#F4F4F5', // zinc-100
     amber: '#F59E0B',
     amberLight: '#FFFBEB',
     blue: '#3B82F6',
@@ -25,56 +25,50 @@ export const Colors = {
     purple: '#A855F7',
     purpleLight: '#FAF5FF',
     whatsapp: '#25D366',
-    shadow: 'rgba(0,0,0,0.06)',
+    shadow: 'rgba(0,0,0,0.04)',
     tabBar: '#FFFFFF',
-    tabBarBorder: '#F3F4F6',
+    tabBarBorder: '#E4E4E7',
+    accent: '#0D9488', // teal-600
   },
   dark: {
-    text: '#F9FAFB',
-    textSecondary: '#9CA3AF',
-    textMuted: '#6B7280',
-    background: '#111827',
-    backgroundCard: '#1F2937',
-    backgroundElement: '#374151',
-    backgroundSelected: '#052e16',
-    primary: '#16A34A',
-    primaryLight: '#052e16',
-    primaryDark: '#15803D',
-    primaryGradientStart: '#16A34A',
-    primaryGradientEnd: '#4ADE80',
-    border: '#374151',
-    borderLight: '#1F2937',
+    text: '#171717',
+    textSecondary: '#52525B', 
+    textMuted: '#A1A1AA', 
+    background: '#FFFFFF',
+    backgroundCard: '#FFFFFF',
+    backgroundElement: '#F4F4F5',
+    backgroundSelected: '#E4E4E7',
+    primary: '#171717',
+    primaryLight: '#F4F4F5',
+    primaryDark: '#0A0A0A',
+    primaryGradientStart: '#171717',
+    primaryGradientEnd: '#3F3F46',
+    border: '#E4E4E7',
+    borderLight: '#F4F4F5',
     amber: '#F59E0B',
-    amberLight: '#1c1400',
+    amberLight: '#FFFBEB',
     blue: '#3B82F6',
-    blueLight: '#0c1a35',
+    blueLight: '#EFF6FF',
     red: '#EF4444',
-    redLight: '#1a0000',
+    redLight: '#FEF2F2',
     purple: '#A855F7',
-    purpleLight: '#1a0035',
+    purpleLight: '#FAF5FF',
     whatsapp: '#25D366',
-    shadow: 'rgba(0,0,0,0.3)',
-    tabBar: '#1F2937',
-    tabBarBorder: '#374151',
+    shadow: 'rgba(0,0,0,0.04)',
+    tabBar: '#FFFFFF',
+    tabBarBorder: '#E4E4E7',
+    accent: '#0D9488',
   },
 } as const;
 
 export type ThemeColors = typeof Colors.light;
 
-import { Platform } from 'react-native';
-
-export const Fonts = Platform.select({
-  ios: {
-    sans: 'System',
-    rounded: 'ui-rounded',
-    mono: 'Courier',
-  },
-  default: {
-    sans: 'normal',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-});
+export const Fonts = {
+  serif: 'PlayfairDisplay_600SemiBold',
+  sans: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansBold: 'Inter_700Bold',
+} as const;
 
 export const Spacing = {
   xs: 4,
@@ -89,10 +83,11 @@ export const Spacing = {
 
 export const BorderRadius = {
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
+  md: 12, // xl
+  lg: 16, // 2xl
+  xl: 20, 
+  xxl: 24, // 3xl
+  xxxl: 32,
   full: 9999,
 } as const;
 

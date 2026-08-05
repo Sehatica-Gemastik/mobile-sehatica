@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -124,13 +124,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
   },
   labelDone: {
     textDecorationLine: 'line-through',
   },
   detail: {
     fontSize: FontSize.xs,
+    fontFamily: 'Inter_400Regular',
   },
   right: {
     alignItems: 'flex-end',
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: FontSize.xs,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   checkbox: {
     width: 22,
@@ -152,6 +153,6 @@ const styles = StyleSheet.create({
   checkmark: {
     color: 'white',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
 });

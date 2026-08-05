@@ -100,7 +100,7 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.base,
     borderWidth: 1,
     gap: 10,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 44,
     height: 44,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
     lineHeight: 18,
     flex: 1,
   },
@@ -140,14 +140,16 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontSize: FontSize.xs,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   date: {
     fontSize: FontSize.xs,
+    fontFamily: 'Inter_400Regular',
   },
   summary: {
     fontSize: FontSize.xs,
     lineHeight: 17,
+    fontFamily: 'Inter_400Regular',
   },
   tags: {
     flexDirection: 'row',
@@ -161,7 +163,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: FontSize.xs,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   aiRow: {
     flexDirection: 'row',
@@ -170,6 +172,7 @@ const styles = StyleSheet.create({
   },
   aiLabel: {
     fontSize: FontSize.xs,
+    fontFamily: 'Inter_400Regular',
   },
   // Compact styles
   compactContainer: {
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
   compactIcon: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -195,9 +198,10 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     fontSize: FontSize.xs,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
   },
   compactDate: {
     fontSize: 10,
+    fontFamily: 'Inter_400Regular',
   },
 });

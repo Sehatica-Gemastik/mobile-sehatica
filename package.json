@@ -3,16 +3,20 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/playfair-display": "^0.4.2",
     "@expo/ui": "~57.0.8",
     "@tanstack/react-query": "^5.101.4",
     "expo": "~57.0.9",
     "expo-av": "^16.0.8",
+    "expo-blur": "~57.0.2",
     "expo-constants": "~57.0.8",
     "expo-device": "~57.0.1",
-    "expo-font": "~57.0.1",
+    "expo-font": "^57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.1",
     "expo-image-picker": "^57.0.7",
+    "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.4",
     "expo-router": "~57.0.9",
     "expo-secure-store": "^57.0.1",
@@ -34,6 +38,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },
