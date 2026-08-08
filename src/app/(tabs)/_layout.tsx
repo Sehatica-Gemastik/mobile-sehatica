@@ -5,7 +5,7 @@ import { BottomTabBar } from '@/components/app-tabs';
 import { Colors } from '@/constants/theme';
 
 export default function TabsLayout() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   return (

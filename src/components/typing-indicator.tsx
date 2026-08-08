@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, useColorScheme } from 'react-native';
 import { Colors, BorderRadius } from '@/constants/theme';
+import { Icon } from '@/components/ui';
 
 export function TypingIndicator() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   const dots = [
@@ -17,8 +18,8 @@ export function TypingIndicator() {
       Animated.loop(
         Animated.sequence([
           Animated.delay(i * 150),
-          Animated.timing(dot, { toValue: -6, duration: 250, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0, duration: 250, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: -5, duration: 240, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 240, useNativeDriver: true }),
           Animated.delay(450 - i * 150),
         ])
       )
@@ -30,7 +31,7 @@ export function TypingIndicator() {
   return (
     <View style={styles.container}>
       <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Animated.Text style={{ fontSize: 16 }}>🤖</Animated.Text>
+        <Icon name="sparkles" size="sm" color={colors.onPrimary} />
       </View>
       <View style={[styles.bubble, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
         <View style={styles.dots}>
@@ -57,17 +58,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.md,
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bubble: {
-    borderRadius: 20,
+    borderRadius: 16,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
   },
   dots: {
@@ -77,8 +78,8 @@ const styles = StyleSheet.create({
     height: 16,
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

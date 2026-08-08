@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, Alert,
-  ActivityIndicator, useColorScheme,
+  View, Text, StyleSheet, ScrollView, KeyboardAvoidingView,
+  Platform, Alert, useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/store/auth-store';
 import { authService } from '@/services/auth.service';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Button, TextField, Icon } from '@/components/ui';
 
 export default function LoginScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
   const { setAuth } = useAuthStore();
 
   const handleLogin = async () => {
@@ -31,7 +30,7 @@ export default function LoginScreen() {
     try {
       const result = await authService.login(email.trim(), password);
       await setAuth(result.user, result.accessToken, result.refreshToken);
-      router.replace('/(tabs)/');
+      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Login Gagal', err.message ?? 'Email atau password salah');
     } finally {
@@ -50,101 +49,60 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight }]}>
-              <Text style={styles.logoEmoji}>🌿</Text>
+            <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
+              <Icon name="leaf-outline" size="lg" color={colors.primary} />
             </View>
-            <Text style={[styles.appName, { color: colors.primary }]}>Sehatica</Text>
+            <Text style={[styles.brand, { color: colors.text }]}>Sehatica</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              Asisten Kesehatan Cerdas Anda
+              Asisten kesehatan cerdas Anda
             </Text>
           </View>
 
-          {/* Card */}
-          <View style={[styles.card, { backgroundColor: colors.backgroundCard, shadowColor: colors.shadow }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Masuk</Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-              Selamat datang kembali 👋
-            </Text>
+          <View style={styles.form}>
+            <Text style={[styles.formTitle, { color: colors.text }]}>Masuk</Text>
 
-            {/* Email field */}
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
-              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
-                <Text style={styles.inputIcon}>📧</Text>
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="nama@email.com"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
+            <TextField
+              label="Email"
+              icon="mail-outline"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="nama@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-            {/* Password field */}
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Password</Text>
-              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
-                <Text style={styles.inputIcon}>🔒</Text>
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Masukkan password"
-                  placeholderTextColor={colors.textMuted}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <TextField
+              label="Password"
+              icon="lock-closed-outline"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Masukkan password"
+              secureTextEntry={!showPassword}
+              secureToggle
+              showSecure={showPassword}
+              onToggleSecure={() => setShowPassword((v) => !v)}
+            />
 
-            {/* Login button */}
-            <TouchableOpacity
-              onPress={handleLogin}
-              disabled={loading}
-              style={[styles.loginBtn, { backgroundColor: colors.primary }, loading && { opacity: 0.7 }]}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.loginBtnText}>Masuk</Text>
-              )}
-            </TouchableOpacity>
+            <Button label="Masuk" onPress={handleLogin} loading={loading} fullWidth />
 
-            {/* Divider */}
             <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textMuted }]}>atau</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.line, { backgroundColor: colors.border }]} />
+              <Text style={[styles.or, { color: colors.textMuted }]}>atau</Text>
+              <View style={[styles.line, { backgroundColor: colors.border }]} />
             </View>
 
-            {/* Register link */}
-            <TouchableOpacity
+            <Button
+              label="Belum punya akun? Daftar"
+              variant="secondary"
               onPress={() => router.push('/(auth)/register')}
-              style={[styles.registerBtn, { borderColor: colors.border }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.registerBtnText, { color: colors.text }]}>
-                Belum punya akun?{' '}
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>Daftar</Text>
-              </Text>
-            </TouchableOpacity>
+              fullWidth
+            />
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.textMuted }]}>
-              🔒 Data Anda aman dan terenkripsi
-            </Text>
-          </View>
+          <Text style={[styles.footer, { color: colors.textMuted }]}>
+            Data Anda aman dan terenkripsi
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -160,66 +118,21 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
     paddingVertical: Spacing.xxl,
   },
-  header: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  logoContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: BorderRadius.xl,
+  header: { alignItems: 'center', gap: Spacing.sm },
+  logo: {
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
-  logoEmoji: { fontSize: 36 },
-  appName: { fontSize: FontSize.xxl, fontWeight: '800', letterSpacing: -0.5 },
-  tagline: { fontSize: FontSize.sm, textAlign: 'center' },
-  card: {
-    borderRadius: BorderRadius.xxl,
-    padding: Spacing.xl,
-    gap: Spacing.base,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  cardTitle: { fontSize: FontSize.xl, fontWeight: '800' },
-  cardSubtitle: { fontSize: FontSize.sm, marginBottom: 4 },
-  fieldGroup: { gap: 6 },
-  label: { fontSize: FontSize.sm, fontWeight: '600' },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1.5,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  inputIcon: { fontSize: 16 },
-  input: { flex: 1, fontSize: FontSize.sm, minHeight: 22 },
-  loginBtn: {
-    paddingVertical: 14,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    marginTop: 4,
-    shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  loginBtnText: { color: 'white', fontSize: FontSize.md, fontWeight: '700' },
+  brand: { fontSize: FontSize.xxl, fontFamily: Fonts.bold, letterSpacing: -0.6 },
+  tagline: { fontSize: FontSize.sm, fontFamily: Fonts.regular },
+  form: { gap: Spacing.base },
+  formTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold, marginBottom: 4 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: FontSize.xs },
-  registerBtn: {
-    paddingVertical: 12,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    borderWidth: 1.5,
-  },
-  registerBtnText: { fontSize: FontSize.sm },
-  footer: { alignItems: 'center' },
-  footerText: { fontSize: FontSize.xs },
+  line: { flex: 1, height: StyleSheet.hairlineWidth },
+  or: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  footer: { textAlign: 'center', fontSize: FontSize.xs, fontFamily: Fonts.regular },
 });

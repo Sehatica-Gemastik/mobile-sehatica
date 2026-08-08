@@ -3,7 +3,8 @@ import {
   View, Text, TouchableOpacity, StyleSheet, useColorScheme,
 } from 'react-native';
 import { MedicalRecord } from '@/types';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Icon, recordIcons } from '@/components/ui';
 
 interface MedicalRecordCardProps {
   record: MedicalRecord;
@@ -11,17 +12,18 @@ interface MedicalRecordCardProps {
   compact?: boolean;
 }
 
-const typeConfig = {
-  consultation: { icon: '👤', bg: '#EFF6FF', text: '#2563EB', label: 'Konsultasi' },
-  image: { icon: '📷', bg: '#FAF5FF', text: '#9333EA', label: 'Lab/Foto' },
-  voice: { icon: '🎤', bg: '#FEF2F2', text: '#DC2626', label: 'Rekaman' },
-  note: { icon: '📝', bg: '#F9FAFB', text: '#6B7280', label: 'Catatan' },
+const typeMeta = {
+  consultation: { bg: '#F0FDF4', text: '#15803D', label: 'Konsultasi' },
+  image: { bg: '#F4F4F5', text: '#52525B', label: 'Lab/Foto' },
+  voice: { bg: '#FEF2F2', text: '#DC2626', label: 'Rekaman' },
+  note: { bg: '#F4F4F5', text: '#52525B', label: 'Catatan' },
 };
 
 export function MedicalRecordCard({ record, onPress, compact = false }: MedicalRecordCardProps) {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const config = typeConfig[record.type] ?? typeConfig.note;
+  const meta = typeMeta[record.type] ?? typeMeta.note;
+  const iconName = recordIcons[record.type] ?? recordIcons.note;
 
   const formattedDate = record.recordDate
     ?? new Date(record.createdAt).toLocaleDateString('id-ID', {
@@ -35,8 +37,8 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
         activeOpacity={0.7}
         style={[styles.compactContainer, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}
       >
-        <View style={[styles.compactIcon, { backgroundColor: config.bg }]}>
-          <Text style={{ fontSize: 16 }}>{config.icon}</Text>
+        <View style={[styles.compactIcon, { backgroundColor: meta.bg }]}>
+          <Icon name={iconName} size="sm" color={meta.text} />
         </View>
         <View style={styles.compactContent}>
           <Text style={[styles.compactTitle, { color: colors.text }]} numberOfLines={1}>
@@ -44,7 +46,7 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
           </Text>
           <Text style={[styles.compactDate, { color: colors.textMuted }]}>{formattedDate}</Text>
         </View>
-        <Text style={{ color: colors.border, fontSize: 18 }}>›</Text>
+        <Icon name="chevron-forward" size="sm" color={colors.textMuted} />
       </TouchableOpacity>
     );
   }
@@ -56,29 +58,29 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
       style={[styles.container, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}
     >
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: config.bg }]}>
-          <Text style={{ fontSize: 20 }}>{config.icon}</Text>
+        <View style={[styles.iconContainer, { backgroundColor: meta.bg }]}>
+          <Icon name={iconName} size="md" color={meta.text} />
         </View>
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2} style={{ flex: 1 }}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {record.title}
             </Text>
-            <View style={[styles.typeBadge, { backgroundColor: config.bg }]}>
-              <Text style={[styles.typeLabel, { color: config.text }]}>{config.label}</Text>
+            <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
+              <Text style={[styles.typeLabel, { color: meta.text }]}>{meta.label}</Text>
             </View>
           </View>
           <Text style={[styles.date, { color: colors.textMuted }]}>{formattedDate}</Text>
         </View>
       </View>
 
-      {record.summary && (
+      {record.summary ? (
         <Text style={[styles.summary, { color: colors.textSecondary }]} numberOfLines={3}>
           {record.summary}
         </Text>
-      )}
+      ) : null}
 
-      {record.tags && record.tags.length > 0 && (
+      {record.tags && record.tags.length > 0 ? (
         <View style={styles.tags}>
           {record.tags.slice(0, 4).map((tag) => (
             <View key={tag} style={[styles.tag, { backgroundColor: colors.backgroundElement }]}>
@@ -86,122 +88,69 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
             </View>
           ))}
         </View>
-      )}
+      ) : null}
 
-      {record.isAiSummarized && (
+      {record.isAiSummarized ? (
         <View style={styles.aiRow}>
-          <Text style={{ fontSize: 10 }}>🤖</Text>
+          <Icon name="sparkles-outline" size="sm" color={colors.textMuted} />
           <Text style={[styles.aiLabel, { color: colors.textMuted }]}>Diringkas AI</Text>
         </View>
-      )}
+      ) : null}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.base,
     borderWidth: 1,
     gap: 10,
   },
-  header: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  header: { flexDirection: 'row', gap: 12 },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  headerContent: {
-    flex: 1,
-    gap: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
-  },
-  title: {
-    fontSize: FontSize.sm,
-    fontFamily: 'Inter_700Bold',
-    lineHeight: 18,
-    flex: 1,
-  },
+  headerContent: { flex: 1, gap: 4 },
+  titleRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  title: { fontSize: FontSize.sm, fontFamily: Fonts.bold, lineHeight: 18, flex: 1 },
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
     flexShrink: 0,
   },
-  typeLabel: {
-    fontSize: FontSize.xs,
-    fontFamily: 'Inter_700Bold',
-  },
-  date: {
-    fontSize: FontSize.xs,
-    fontFamily: 'Inter_400Regular',
-  },
-  summary: {
-    fontSize: FontSize.xs,
-    lineHeight: 17,
-    fontFamily: 'Inter_400Regular',
-  },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  tagText: {
-    fontSize: FontSize.xs,
-    fontFamily: 'Inter_500Medium',
-  },
-  aiRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  aiLabel: {
-    fontSize: FontSize.xs,
-    fontFamily: 'Inter_400Regular',
-  },
-  // Compact styles
+  typeLabel: { fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  date: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  summary: { fontSize: FontSize.xs, lineHeight: 17, fontFamily: Fonts.regular },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full },
+  tagText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  aiLabel: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: Spacing.base,
     paddingVertical: 10,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
   },
   compactIcon: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  compactContent: {
-    flex: 1,
-    gap: 2,
-  },
-  compactTitle: {
-    fontSize: FontSize.xs,
-    fontFamily: 'Inter_700Bold',
-  },
-  compactDate: {
-    fontSize: 10,
-    fontFamily: 'Inter_400Regular',
-  },
+  compactContent: { flex: 1, gap: 2 },
+  compactTitle: { fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  compactDate: { fontSize: 11, fontFamily: Fonts.regular },
 });
