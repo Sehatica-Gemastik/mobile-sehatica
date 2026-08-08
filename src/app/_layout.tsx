@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/auth-store';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
-import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display';
+import {
+  useFonts,
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
+
+if (Platform.OS === 'web') {
+  require('../global.css');
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,8 +22,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 1000 * 60, // 1 minute
-      gcTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60,
+      gcTime: 1000 * 60 * 5,
     },
   },
 });
@@ -39,7 +47,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)/');
+      router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, segments]);
 
@@ -48,10 +56,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_700Bold,
-    PlayfairDisplay_600SemiBold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_700Bold,
   });
 
   if (!fontsLoaded) return null;
@@ -60,7 +67,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <AuthGuard>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
