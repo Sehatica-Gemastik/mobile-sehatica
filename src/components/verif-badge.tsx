@@ -1,24 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { VerifStatus } from '@/types';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
+import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
+import { Icon } from '@/components/ui';
 
 interface VerifBadgeProps {
   status: VerifStatus;
   doctorName?: string | null;
   note?: string | null;
-  onRequestVerif?: () => void;
 }
 
-export function VerifBadge({ status, doctorName, note, onRequestVerif }: VerifBadgeProps) {
-  const scheme = useColorScheme() ?? 'light';
+export function VerifBadge({ status, doctorName, note }: VerifBadgeProps) {
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   if (status === 'approved') {
     return (
-      <View style={[styles.badge, { backgroundColor: colors.primaryLight, borderColor: '#86efac' }]}>
-        <Text style={styles.badgeIcon}>✅</Text>
+      <View style={[styles.badge, { backgroundColor: colors.primaryLight, borderColor: colors.primaryMuted }]}>
+        <Icon name="checkmark-circle" size="sm" color={colors.primary} />
         <Text style={[styles.badgeText, { color: colors.primary }]}>
           Diverifikasi {doctorName}
         </Text>
@@ -28,23 +27,21 @@ export function VerifBadge({ status, doctorName, note, onRequestVerif }: VerifBa
 
   if (status === 'revised') {
     return (
-      <View style={[styles.reviseContainer, { backgroundColor: colors.blueLight, borderColor: '#bfdbfe' }]}>
+      <View style={[styles.reviseContainer, { backgroundColor: colors.blueLight, borderColor: '#BFDBFE' }]}>
         <View style={styles.badge}>
-          <Text style={styles.badgeIcon}>🔵</Text>
+          <Icon name="create-outline" size="sm" color={colors.blue} />
           <Text style={[styles.badgeText, { color: colors.blue }]}>
             Direvisi oleh {doctorName}
           </Text>
         </View>
-        {note && (
-          <Text style={[styles.reviseNote, { color: colors.blue }]}>{note}</Text>
-        )}
+        {note ? <Text style={[styles.reviseNote, { color: colors.blue }]}>{note}</Text> : null}
       </View>
     );
   }
 
   if (status === 'pending') {
     return (
-      <View style={[styles.badge, { backgroundColor: colors.amberLight, borderColor: '#fde68a' }]}>
+      <View style={[styles.badge, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}>
         <View style={styles.pendingDot} />
         <Text style={[styles.badgeText, { color: colors.amber }]}>
           Menunggu verifikasi dokter…
@@ -62,7 +59,7 @@ interface RequestVerifButtonProps {
 }
 
 export function RequestVerifButton({ onPress, loading }: RequestVerifButtonProps) {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   return (
@@ -76,7 +73,7 @@ export function RequestVerifButton({ onPress, loading }: RequestVerifButtonProps
       ]}
       activeOpacity={0.7}
     >
-      <Text style={styles.requestBtnIcon}>🩺</Text>
+      <Icon name="medkit-outline" size="sm" color={colors.primary} />
       <Text style={[styles.requestBtnText, { color: colors.primary }]}>
         {loading ? 'Mengirim...' : 'Minta Verifikasi Dokter'}
       </Text>
@@ -91,34 +88,24 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     marginTop: 6,
   },
-  badgeIcon: {
-    fontSize: FontSize.sm,
-  },
-  badgeText: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
+  badgeText: { fontSize: FontSize.xs, fontFamily: Fonts.medium, flexShrink: 1 },
   reviseContainer: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     padding: 10,
     marginTop: 6,
     gap: 4,
   },
-  reviseNote: {
-    fontSize: FontSize.xs,
-    lineHeight: 18,
-  },
+  reviseNote: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular },
   pendingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#D97706',
   },
   requestBtn: {
     flexDirection: 'row',
@@ -126,19 +113,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1.5,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
     marginTop: 6,
     alignSelf: 'flex-start',
   },
-  requestBtnDisabled: {
-    opacity: 0.5,
-  },
-  requestBtnIcon: {
-    fontSize: FontSize.sm,
-  },
-  requestBtnText: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-  },
+  requestBtnDisabled: { opacity: 0.5 },
+  requestBtnText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
 });

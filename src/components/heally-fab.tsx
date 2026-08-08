@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  TouchableOpacity, View, Text, StyleSheet, Animated,
-} from 'react-native';
+import { TouchableOpacity, View, StyleSheet, Animated, useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
+import { Icon } from '@/components/ui';
 
 interface HeallyFABProps {
   isOpen: boolean;
@@ -14,15 +12,14 @@ interface HeallyFABProps {
 export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
-  // Pulse animation when not open and not read
   useEffect(() => {
     if (!isOpen && !hasUnread) {
       const pulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
           Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
         ])
       );
@@ -34,19 +31,14 @@ export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.9, duration: 80, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.92, duration: 80, useNativeDriver: true }),
       Animated.timing(scaleAnim, { toValue: 1, duration: 80, useNativeDriver: true }),
     ]).start();
     onPress();
   };
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={0.8}
-      style={styles.fab}
-    >
-      {/* Pulse ring */}
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={styles.fab}>
       {!isOpen && (
         <Animated.View
           style={[
@@ -55,8 +47,6 @@ export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps
           ]}
         />
       )}
-
-      {/* Main button */}
       <Animated.View
         style={[
           styles.button,
@@ -66,17 +56,15 @@ export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps
           },
         ]}
       >
-        {isOpen ? (
-          <Text style={styles.closeIcon}>✕</Text>
-        ) : (
-          <Text style={styles.icon}>🤖</Text>
-        )}
+        <Icon
+          name={isOpen ? 'close' : 'sparkles'}
+          size="md"
+          color={colors.onPrimary}
+        />
       </Animated.View>
-
-      {/* AI badge */}
       {!isOpen && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>AI</Text>
+        <View style={[styles.badge, { backgroundColor: colors.amber }]}>
+          <Animated.Text style={styles.badgeText}>AI</Animated.Text>
         </View>
       )}
     </TouchableOpacity>
@@ -86,44 +74,30 @@ export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps
 const styles = StyleSheet.create({
   fab: {
     position: 'relative',
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pulseRing: {
     position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    opacity: 0.4,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    opacity: 0.35,
   },
   button: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  icon: {
-    fontSize: 24,
-  },
-  closeIcon: {
-    fontSize: 18,
-    color: 'white',
-    fontWeight: '700',
   },
   badge: {
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#F59E0B',
     borderRadius: 8,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -133,6 +107,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: 'white',
     fontSize: 8,
-    fontWeight: '900',
+    fontWeight: '800',
   },
 });

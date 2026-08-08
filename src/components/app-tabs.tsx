@@ -1,48 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, useColorScheme,
-  Platform, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useSegments } from 'expo-router';
-import { Colors, FontSize, BorderRadius } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
 import { HeallyFAB } from './heally-fab';
+import { Icon, IconName } from '@/components/ui';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-interface Tab {
+type Tab = {
   name: string;
-  icon: string;
+  icon: IconName;
   label: string;
   route: string;
-}
+};
 
 const TABS: Tab[] = [
-  { name: 'home', icon: '🏠', label: 'Beranda', route: '/(tabs)/' },
-  { name: 'records', icon: '📋', label: 'Rekam', route: '/(tabs)/records' },
-  { name: 'heally', icon: '', label: 'Heally', route: '/(tabs)/heally' }, // FAB slot
-  { name: 'schedule', icon: '📅', label: 'Jadwal', route: '/(tabs)/schedule' },
-  { name: 'doctor', icon: '👨‍⚕️', label: 'Dokter', route: '/(tabs)/doctor' },
+  { name: 'home', icon: 'home-outline', label: 'Beranda', route: '/(tabs)/' },
+  { name: 'records', icon: 'clipboard-outline', label: 'Rekam', route: '/(tabs)/records' },
+  { name: 'heally', icon: 'sparkles-outline', label: 'Heally', route: '/(tabs)/heally' },
+  { name: 'schedule', icon: 'calendar-outline', label: 'Jadwal', route: '/(tabs)/schedule' },
+  { name: 'doctor', icon: 'medkit-outline', label: 'Dokter', route: '/(tabs)/doctor' },
 ];
 
 export function BottomTabBar() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const insets = useSafeAreaInsets();
   const segments = useSegments();
-
   const currentRoute = '/' + segments.join('/');
 
   const isActive = (tab: Tab) => {
     if (tab.name === 'heally') return currentRoute.includes('heally');
-    return currentRoute.includes(tab.name) || (tab.name === 'home' && currentRoute === '/(tabs)');
+    return currentRoute.includes(tab.name) || (tab.name === 'home' && (currentRoute === '/(tabs)' || currentRoute.endsWith('/(tabs)/')));
   };
 
   const handleTabPress = (tab: Tab) => {
-    if (tab.name === 'heally') {
-      router.push('/(tabs)/heally');
-      return;
-    }
     router.push(tab.route as any);
   };
 
@@ -78,13 +71,12 @@ export function BottomTabBar() {
             style={styles.tab}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.iconWrapper,
-                active && { backgroundColor: colors.primaryLight },
-              ]}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
+            <View style={[styles.iconWrapper, active && { backgroundColor: colors.primaryLight }]}>
+              <Icon
+                name={tab.icon}
+                size="md"
+                color={active ? colors.primary : colors.textMuted}
+              />
             </View>
             <Text
               style={[
@@ -109,42 +101,17 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingHorizontal: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 10,
   },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
+  tab: { flex: 1, alignItems: 'center', gap: 4 },
   iconWrapper: {
     width: 44,
-    height: 36,
-    borderRadius: BorderRadius.md,
+    height: 32,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabIcon: {
-    fontSize: 20,
-  },
-  tabLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: '500',
-  },
-  tabLabelActive: {
-    fontWeight: '700',
-  },
-  fabContainer: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-    marginTop: -12, // Lift the FAB above the tab bar
-  },
-  fabLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-  },
+  tabLabel: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  tabLabelActive: { fontFamily: Fonts.bold },
+  fabContainer: { flex: 1, alignItems: 'center', gap: 4, marginTop: -12 },
+  fabLabel: { fontSize: FontSize.xs, fontFamily: Fonts.bold },
 });
