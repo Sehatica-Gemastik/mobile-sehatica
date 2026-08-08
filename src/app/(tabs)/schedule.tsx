@@ -4,15 +4,15 @@ import {
   RefreshControl, Modal, ActivityIndicator, Alert,
   useColorScheme, Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleService } from '@/services/schedule.service';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { ScheduleItemCard } from '@/components/schedule-item';
+import { Button, EmptyState, Icon, ScreenHeader, scheduleIcons } from '@/components/ui';
 import { ScheduleItem } from '@/types';
 
 export default function ScheduleScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
   const [showAIModal, setShowAIModal] = useState(false);
@@ -58,38 +58,36 @@ export default function ScheduleScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: colors.backgroundCard, borderBottomColor: colors.border }]}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Jadwal Harian</Text>
-            <Text style={[styles.headerDate, { color: colors.textMuted }]}>{todayLabel}</Text>
-          </View>
+      <ScreenHeader
+        title="Jadwal harian"
+        subtitle={todayLabel}
+        right={
           <TouchableOpacity
             onPress={() => setShowAIModal(true)}
             style={[styles.aiBtn, { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
-            <Text style={styles.aiBtnText}>🤖 AI Generate</Text>
+            <Icon name="sparkles" size="sm" color={colors.onPrimary} />
+            <Text style={styles.aiBtnText}>AI Generate</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Progress */}
-        <View style={styles.progressRow}>
-          <View style={[styles.progressBarBg, { backgroundColor: colors.backgroundElement }]}>
-            <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${pct}%` as any }]} />
+        }
+      >
+        <View style={styles.progressBlock}>
+          <View style={styles.progressRow}>
+            <View style={[styles.progressBarBg, { backgroundColor: colors.backgroundElement }]}>
+              <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${pct}%` as any }]} />
+            </View>
+            <Text style={[styles.progressPct, { color: colors.primary }]}>{pct}%</Text>
           </View>
-          <Text style={[styles.progressPct, { color: colors.primary }]}>{pct}%</Text>
+          <Text style={[styles.progressLabel, { color: colors.textMuted }]}>
+            {done} dari {total} aktivitas selesai
+          </Text>
         </View>
-        <Text style={[styles.progressLabel, { color: colors.textMuted }]}>
-          {done} dari {total} aktivitas selesai
-        </Text>
-      </SafeAreaView>
+      </ScreenHeader>
 
-      {/* Body */}
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -97,39 +95,34 @@ export default function ScheduleScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
         >
-          {/* Category summary */}
           {total > 0 && (
             <View style={styles.categories}>
-              {[
-                { type: 'food', icon: '🍽️', count: categoryCounts.food },
-                { type: 'pill', icon: '💊', count: categoryCounts.pill },
-                { type: 'exercise', icon: '🏃', count: categoryCounts.exercise },
-                { type: 'water', icon: '💧', count: categoryCounts.water },
-              ].filter((c) => c.count > 0).map((cat) => (
-                <View key={cat.type} style={[styles.categoryPill, { backgroundColor: colors.backgroundElement }]}>
-                  <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                  <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>{cat.count}</Text>
-                </View>
-              ))}
+              {(
+                [
+                  { type: 'food', count: categoryCounts.food },
+                  { type: 'pill', count: categoryCounts.pill },
+                  { type: 'exercise', count: categoryCounts.exercise },
+                  { type: 'water', count: categoryCounts.water },
+                ] as const
+              )
+                .filter((c) => c.count > 0)
+                .map((cat) => (
+                  <View key={cat.type} style={[styles.categoryPill, { backgroundColor: colors.backgroundElement }]}>
+                    <Icon name={scheduleIcons[cat.type]} size="sm" color={colors.textSecondary} />
+                    <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>{cat.count}</Text>
+                  </View>
+                ))}
             </View>
           )}
 
-          {/* Schedule items */}
           {items.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={{ fontSize: 48 }}>📅</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum ada jadwal hari ini</Text>
-              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                Tap tombol AI Generate untuk membuat jadwal otomatis berdasarkan rekam medis Anda
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowAIModal(true)}
-                style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.emptyBtnText}>🤖 Generate Jadwal AI</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="calendar-outline"
+              title="Belum ada jadwal hari ini"
+              description="Generate jadwal otomatis berdasarkan rekam medis Anda"
+              actionLabel="Generate jadwal AI"
+              onAction={() => setShowAIModal(true)}
+            />
           ) : (
             <View style={styles.itemsList}>
               {items.map((item: ScheduleItem) => (
@@ -144,30 +137,36 @@ export default function ScheduleScreen() {
         </ScrollView>
       )}
 
-      {/* AI Generate Modal */}
       <Modal visible={showAIModal} animationType="slide" transparent>
         <Pressable style={styles.overlay} onPress={() => setShowAIModal(false)}>
           <Pressable style={[styles.modalCard, { backgroundColor: colors.backgroundCard }]} onPress={() => {}}>
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>AI Generate Jadwal</Text>
-              <TouchableOpacity onPress={() => setShowAIModal(false)} style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={{ fontSize: 16, color: colors.textSecondary }}>✕</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>AI Generate jadwal</Text>
+              <TouchableOpacity
+                onPress={() => setShowAIModal(false)}
+                style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}
+              >
+                <Icon name="close" size="sm" color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={[styles.aiInfo, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-              <Text style={{ fontSize: 28 }}>🤖</Text>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={[styles.aiInfoTitle, { color: colors.text }]}>Heally akan membuat jadwal berdasarkan:</Text>
+              <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
+                <Icon name="sparkles" size="md" color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={[styles.aiInfoTitle, { color: colors.text }]}>
+                  Heally membuat jadwal dari:
+                </Text>
                 {[
-                  'Rekam medis & diagnosis Anda',
-                  'Obat yang sedang dikonsumsi',
-                  'Kondisi kesehatan Anda',
-                  'Pola makan dan aktivitas ideal',
+                  'Rekam medis & diagnosis',
+                  'Obat yang dikonsumsi',
+                  'Kondisi kesehatan',
+                  'Pola makan & aktivitas ideal',
                 ].map((item, i) => (
                   <View key={i} style={styles.aiPoint}>
-                    <Text style={{ color: colors.accent, fontSize: 12 }}>✓</Text>
+                    <Icon name="checkmark" size="sm" color={colors.primary} />
                     <Text style={[styles.aiPointText, { color: colors.textSecondary }]}>{item}</Text>
                   </View>
                 ))}
@@ -175,24 +174,21 @@ export default function ScheduleScreen() {
             </View>
 
             <Text style={[styles.aiDisclaimer, { color: colors.textMuted }]}>
-              *Jadwal AI bersifat rekomendasi dan belum diverifikasi dokter
+              Jadwal AI bersifat rekomendasi dan belum diverifikasi dokter
             </Text>
 
-            <TouchableOpacity
+            <Button
+              label="Generate sekarang"
               onPress={() => aiGenerateMutation.mutate()}
-              disabled={aiGenerateMutation.isPending}
-              style={[styles.generateBtn, { backgroundColor: colors.primary }, aiGenerateMutation.isPending && { opacity: 0.7 }]}
-              activeOpacity={0.8}
-            >
-              {aiGenerateMutation.isPending ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.generateBtnText}>Generate Jadwal Sekarang</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowAIModal(false)} style={styles.cancelBtn}>
-              <Text style={[styles.cancelBtnText, { color: colors.textMuted }]}>Batal</Text>
-            </TouchableOpacity>
+              loading={aiGenerateMutation.isPending}
+              fullWidth
+            />
+            <Button
+              label="Batal"
+              variant="ghost"
+              onPress={() => setShowAIModal(false)}
+              fullWidth
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -202,41 +198,48 @@ export default function ScheduleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: Spacing.sm, marginBottom: 12 },
-  headerTitle: { fontSize: FontSize.xxl, fontFamily: 'PlayfairDisplay_600SemiBold' },
-  headerDate: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingVertical: 10, borderRadius: BorderRadius.full },
-  aiBtnText: { color: 'white', fontSize: FontSize.xs, fontFamily: 'Inter_700Bold' },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
-  progressBarBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: 8, borderRadius: 4 },
-  progressPct: { fontSize: FontSize.sm, fontFamily: 'Inter_700Bold', minWidth: 36, textAlign: 'right' },
-  progressLabel: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
+  aiBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: BorderRadius.full,
+  },
+  aiBtnText: { color: 'white', fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  progressBlock: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, gap: 4 },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  progressBarBg: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: 6, borderRadius: 3 },
+  progressPct: { fontSize: FontSize.sm, fontFamily: Fonts.bold, minWidth: 36, textAlign: 'right' },
+  progressLabel: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
-  categories: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  categoryPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: BorderRadius.full },
-  categoryCount: { fontSize: FontSize.xs, fontFamily: 'Inter_600SemiBold' },
+  categories: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  categoryPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: BorderRadius.full,
+  },
+  categoryCount: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
   itemsList: { gap: 8 },
-  emptyState: { alignItems: 'center', gap: 12, paddingTop: 60 },
-  emptyTitle: { fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
-  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center', paddingHorizontal: Spacing.xl, fontFamily: 'Inter_400Regular' },
-  emptyBtn: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: BorderRadius.full },
-  emptyBtnText: { color: 'white', fontFamily: 'Inter_700Bold' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: { borderTopLeftRadius: BorderRadius.xxxl, borderTopRightRadius: BorderRadius.xxxl, padding: Spacing.xl, paddingBottom: 40, gap: Spacing.base },
-  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB', alignSelf: 'center', marginBottom: 4 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalCard: {
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+    gap: Spacing.base,
+  },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: FontSize.lg, fontFamily: 'PlayfairDisplay_600SemiBold' },
+  modalTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold },
   closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  aiInfo: { flexDirection: 'row', gap: 12, padding: Spacing.base, borderRadius: BorderRadius.xl, alignItems: 'flex-start', borderWidth: 1 },
-  aiInfoTitle: { fontSize: FontSize.sm, fontFamily: 'Inter_600SemiBold', marginBottom: 4 },
+  aiInfo: {
+    flexDirection: 'row', gap: 12, padding: Spacing.base,
+    borderRadius: BorderRadius.md, alignItems: 'flex-start', borderWidth: 1,
+  },
+  aiAvatar: {
+    width: 40, height: 40, borderRadius: BorderRadius.sm,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  aiInfoTitle: { fontSize: FontSize.sm, fontFamily: Fonts.medium, marginBottom: 2 },
   aiPoint: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  aiPointText: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
-  aiDisclaimer: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: 'Inter_400Regular' },
-  generateBtn: { paddingVertical: 14, borderRadius: BorderRadius.full, alignItems: 'center', shadowColor: '#171717', shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
-  generateBtnText: { color: 'white', fontFamily: 'Inter_700Bold', fontSize: FontSize.sm },
-  cancelBtn: { paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText: { fontSize: FontSize.sm, fontFamily: 'Inter_500Medium' },
+  aiPointText: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  aiDisclaimer: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
 });

@@ -1,16 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, Modal, TextInput, ActivityIndicator,
-  Alert, useColorScheme, Pressable,
+  Alert, useColorScheme, Pressable, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { recordsService } from '@/services/records.service';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { MedicalRecordCard } from '@/components/medical-record-card';
-import { RecordType } from '@/types';
+import { Button, Chip, EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
 
 const FILTERS = [
   { id: 'all', label: 'Semua' },
@@ -22,8 +21,14 @@ const FILTERS = [
 
 type AddType = 'text' | 'image' | 'voice';
 
+const ADD_TYPES: { type: AddType; icon: IconName; label: string }[] = [
+  { type: 'text', icon: 'document-text-outline', label: 'Teks' },
+  { type: 'image', icon: 'camera-outline', label: 'Foto/OCR' },
+  { type: 'voice', icon: 'mic-outline', label: 'Suara' },
+];
+
 export default function RecordsScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
 
@@ -125,55 +130,36 @@ export default function RecordsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: colors.backgroundCard, borderBottomColor: colors.border }]}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Rekam Medis</Text>
-            <Text style={[styles.headerSub, { color: colors.textMuted }]}>
-              {records.length} catatan tersimpan
-            </Text>
-          </View>
+      <ScreenHeader
+        title="Rekam medis"
+        subtitle={`${records.length} catatan tersimpan`}
+        right={
           <TouchableOpacity
             onPress={() => setShowAdd(true)}
             style={[styles.addBtn, { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
-            <Text style={styles.addBtnText}>＋</Text>
+            <Icon name="add" size="md" color={colors.onPrimary} />
           </TouchableOpacity>
-        </View>
-
-        {/* Filter chips */}
+        }
+      >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
           <View style={styles.filters}>
             {FILTERS.map((f) => (
-              <TouchableOpacity
+              <Chip
                 key={f.id}
+                label={f.label}
+                active={activeFilter === f.id}
                 onPress={() => setActiveFilter(f.id)}
-                style={[
-                  styles.filterChip,
-                  activeFilter === f.id
-                    ? { backgroundColor: colors.primary }
-                    : { backgroundColor: colors.backgroundElement },
-                ]}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.filterText,
-                  { color: activeFilter === f.id ? 'white' : colors.textSecondary },
-                ]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </ScreenHeader>
 
-      {/* Records list */}
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -184,56 +170,49 @@ export default function RecordsScreen() {
           }
         >
           {records.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={{ fontSize: 40 }}>📋</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum ada rekam medis</Text>
-              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                Tap tombol + untuk menambahkan rekam medis Anda
-              </Text>
-            </View>
+            <EmptyState
+              icon="clipboard-outline"
+              title="Belum ada rekam medis"
+              description="Tap tombol + untuk menambahkan rekam medis Anda"
+            />
           ) : (
-            records.map((rec) => (
-              <MedicalRecordCard key={rec.id} record={rec} />
-            ))
+            records.map((rec) => <MedicalRecordCard key={rec.id} record={rec} />)
           )}
         </ScrollView>
       )}
 
-      {/* Add Modal */}
       <Modal visible={showAdd} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={resetAdd}>
           <Pressable style={[styles.modalCard, { backgroundColor: colors.backgroundCard }]} onPress={() => {}}>
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Tambah Rekam Medis</Text>
-              <TouchableOpacity onPress={resetAdd} style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>✕</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Tambah rekam medis</Text>
+              <TouchableOpacity
+                onPress={resetAdd}
+                style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}
+              >
+                <Icon name="close" size="sm" color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            {/* Type selector */}
             <View style={styles.typeGrid}>
-              {[
-                { type: 'text', icon: '📝', label: 'Teks', activeBg: '#F3F4F6', activeBorder: '#D1D5DB', activeText: '#4B5563' }, // gray
-                { type: 'image', icon: '📷', label: 'Foto/OCR', activeBg: '#FAF5FF', activeBorder: '#A855F7', activeText: '#7E22CE' }, // purple
-                { type: 'voice', icon: '🎤', label: 'Rekam Suara', activeBg: '#FEF2F2', activeBorder: '#EF4444', activeText: '#B91C1C' }, // red
-              ].map(({ type, icon, label, activeBg, activeBorder, activeText }) => {
+              {ADD_TYPES.map(({ type, icon, label }) => {
                 const isActive = addType === type;
                 return (
                   <TouchableOpacity
                     key={type}
-                    onPress={() => setAddType(type as AddType)}
+                    onPress={() => setAddType(type)}
                     style={[
                       styles.typeCard,
                       {
-                        borderColor: isActive ? activeBorder : 'transparent',
-                        backgroundColor: isActive ? activeBg : colors.backgroundElement,
+                        borderColor: isActive ? colors.primary : 'transparent',
+                        backgroundColor: isActive ? colors.primaryLight : colors.backgroundElement,
                       },
                     ]}
                     activeOpacity={0.7}
                   >
-                    <Text style={{ fontSize: 24 }}>{icon}</Text>
-                    <Text style={[styles.typeLabel, { color: isActive ? activeText : colors.textSecondary }]}>
+                    <Icon name={icon} size="md" color={isActive ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.typeLabel, { color: isActive ? colors.primary : colors.textSecondary }]}>
                       {label}
                     </Text>
                   </TouchableOpacity>
@@ -241,7 +220,6 @@ export default function RecordsScreen() {
               })}
             </View>
 
-            {/* Text form */}
             {addType === 'text' && (
               <View style={styles.formGroup}>
                 <TextInput
@@ -250,6 +228,8 @@ export default function RecordsScreen() {
                   placeholderTextColor={colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
+                  underlineColorAndroid="transparent"
+                  selectionColor={colors.primary}
                 />
                 <TextInput
                   style={[styles.textArea, { borderColor: colors.border, color: colors.text, backgroundColor: colors.backgroundElement }]}
@@ -260,11 +240,12 @@ export default function RecordsScreen() {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                  underlineColorAndroid="transparent"
+                  selectionColor={colors.primary}
                 />
               </View>
             )}
 
-            {/* Image OCR */}
             {addType === 'image' && (
               <TouchableOpacity
                 onPress={handlePickImage}
@@ -274,22 +255,21 @@ export default function RecordsScreen() {
               >
                 {isOcrLoading ? (
                   <View style={styles.uploadContent}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator color={colors.primary} />
                     <Text style={[styles.uploadText, { color: colors.primary }]}>Memproses OCR...</Text>
                   </View>
                 ) : (
                   <View style={styles.uploadContent}>
-                    <Text style={{ fontSize: 40 }}>📤</Text>
+                    <Icon name="cloud-upload-outline" size="lg" color={colors.textMuted} />
                     <Text style={[styles.uploadText, { color: colors.text }]}>Pilih foto dokumen medis</Text>
                     <Text style={[styles.uploadHint, { color: colors.textMuted }]}>
-                      AI akan otomatis membaca dan meringkas dokumen Anda
+                      AI akan membaca dan meringkas dokumen Anda
                     </Text>
                   </View>
                 )}
               </TouchableOpacity>
             )}
 
-            {/* Voice */}
             {addType === 'voice' && (
               <View style={styles.formGroup}>
                 <TextInput
@@ -298,33 +278,26 @@ export default function RecordsScreen() {
                   placeholderTextColor={colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
+                  underlineColorAndroid="transparent"
+                  selectionColor={colors.primary}
                 />
                 <TextInput
                   style={[styles.textArea, { borderColor: colors.border, color: colors.text, backgroundColor: colors.backgroundElement }]}
-                  placeholder="Ketik transkripsi atau catatan suara Anda..."
+                  placeholder="Ketik transkripsi atau catatan suara..."
                   placeholderTextColor={colors.textMuted}
                   value={voiceNote}
                   onChangeText={setVoiceNote}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                  underlineColorAndroid="transparent"
+                  selectionColor={colors.primary}
                 />
               </View>
             )}
 
             {addType !== 'image' && (
-              <TouchableOpacity
-                onPress={handleSave}
-                disabled={isLoaderShowing}
-                style={[styles.saveBtn, { backgroundColor: colors.primary }, isLoaderShowing && { opacity: 0.7 }]}
-                activeOpacity={0.8}
-              >
-                {isLoaderShowing ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Simpan</Text>
-                )}
-              </TouchableOpacity>
+              <Button label="Simpan" onPress={handleSave} loading={isLoaderShowing} fullWidth />
             )}
           </Pressable>
         </Pressable>
@@ -335,43 +308,47 @@ export default function RecordsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTop: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.lg, paddingTop: Spacing.base, paddingBottom: Spacing.sm,
-  },
-  headerTitle: { fontSize: FontSize.xxl, fontFamily: 'PlayfairDisplay_600SemiBold' },
-  headerSub: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
   addBtn: {
     width: 40, height: 40, borderRadius: BorderRadius.full,
     alignItems: 'center', justifyContent: 'center',
   },
-  addBtnText: { color: 'white', fontSize: 22, fontFamily: 'Inter_700Bold' },
-  filtersScroll: { paddingBottom: 12 },
+  filtersScroll: { paddingTop: Spacing.sm },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: Spacing.lg },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full },
-  filterText: { fontSize: FontSize.xs, fontFamily: 'Inter_500Medium' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
-  emptyState: { alignItems: 'center', gap: 12, paddingTop: 60 },
-  emptyTitle: { fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
-  emptyDesc: { fontSize: FontSize.sm, textAlign: 'center', fontFamily: 'Inter_400Regular' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: { borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl, padding: Spacing.xl, paddingBottom: 40, gap: Spacing.base },
-  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB', alignSelf: 'center', marginBottom: 4 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalCard: {
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+    gap: Spacing.base,
+  },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: FontSize.lg, fontFamily: 'PlayfairDisplay_600SemiBold' },
+  modalTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold },
   closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   typeGrid: { flexDirection: 'row', gap: 10 },
-  typeCard: { flex: 1, alignItems: 'center', gap: 8, padding: 12, borderRadius: BorderRadius.lg, borderWidth: 2 },
-  typeLabel: { fontSize: FontSize.xs, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
+  typeCard: {
+    flex: 1, alignItems: 'center', gap: 8, padding: 12,
+    borderRadius: BorderRadius.md, borderWidth: 1.5,
+  },
+  typeLabel: { fontSize: FontSize.xs, fontFamily: Fonts.medium, textAlign: 'center' },
   formGroup: { gap: 10 },
-  textInput: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm, fontFamily: 'Inter_400Regular' },
-  textArea: { borderWidth: 1.5, borderRadius: BorderRadius.lg, paddingHorizontal: 14, paddingVertical: 12, fontSize: FontSize.sm, fontFamily: 'Inter_400Regular', minHeight: 100 },
-  uploadZone: { borderWidth: 2, borderStyle: 'dashed', borderRadius: BorderRadius.xl, padding: Spacing.xl },
+  textInput: {
+    borderWidth: 1, borderRadius: BorderRadius.md,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: FontSize.sm, fontFamily: Fonts.regular,
+    ...(Platform.OS === 'web' ? nativeReset : null),
+  },
+  textArea: {
+    borderWidth: 1, borderRadius: BorderRadius.md,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: FontSize.sm, fontFamily: Fonts.regular, minHeight: 100,
+    ...(Platform.OS === 'web' ? nativeReset : null),
+  },
+  uploadZone: { borderWidth: 1, borderStyle: 'dashed', borderRadius: BorderRadius.lg, padding: Spacing.xl },
   uploadContent: { alignItems: 'center', gap: 8 },
-  uploadText: { fontSize: FontSize.sm, fontFamily: 'Inter_600SemiBold' },
-  uploadHint: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: 'Inter_400Regular' },
-  saveBtn: { paddingVertical: 14, borderRadius: BorderRadius.full, alignItems: 'center' },
-  saveBtnText: { color: 'white', fontSize: FontSize.md, fontFamily: 'Inter_700Bold' },
+  uploadText: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
+  uploadHint: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
 });

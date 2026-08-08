@@ -2,15 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, useColorScheme,
-  ActivityIndicator, Alert, FlatList,
+  ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { heallyService } from '@/services/heally.service';
 import { useHeallyStore } from '@/store/heally-store';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { ChatBubble } from '@/components/chat-bubble';
 import { TypingIndicator } from '@/components/typing-indicator';
+import { Icon, IconName } from '@/components/ui';
 import { ChatMessage } from '@/types';
 
 const SUGGESTIONS = [
@@ -21,11 +22,18 @@ const SUGGESTIONS = [
   'Gejala yang perlu diwaspadai',
 ];
 
+const WA_FEATURES: { icon: IconName; title: string; desc: string }[] = [
+  { icon: 'chatbubble-outline', title: 'Kirim pesan via WhatsApp', desc: 'Tanya kesehatan langsung dari WA Anda' },
+  { icon: 'sparkles-outline', title: 'Heally membalas otomatis', desc: 'Berdasarkan rekam medis & data kesehatan' },
+  { icon: 'medkit-outline', title: 'Verifikasi dokter tersedia', desc: 'Respons kritis bisa dikirim ke dokter' },
+  { icon: 'sync-outline', title: 'Riwayat tersinkronisasi', desc: 'Percakapan WA muncul di tab Chat' },
+];
+
 export default function HeallyScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<ScrollView>(null);
 
   const {
     messages, isTyping, activeTab, input,
@@ -33,7 +41,6 @@ export default function HeallyScreen() {
     setTyping, setActiveTab, setInput,
   } = useHeallyStore();
 
-  // Load message history
   const { isLoading } = useQuery({
     queryKey: ['heally-messages'],
     queryFn: async () => {
@@ -44,11 +51,9 @@ export default function HeallyScreen() {
     staleTime: 0,
   });
 
-  // Send message mutation
   const sendMutation = useMutation({
     mutationFn: heallyService.sendMessage,
     onMutate: ({ message }: any) => {
-      // Optimistic: add user message immediately
       const optimisticUserMsg: ChatMessage = {
         id: Date.now(),
         userId: 0,
@@ -67,9 +72,7 @@ export default function HeallyScreen() {
     },
     onSuccess: (data) => {
       setTyping(false);
-      // Replace optimistic messages with real ones from server
       queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
-      // Add AI response
       addMessage(data.aiMessage);
       queryClient.invalidateQueries({ queryKey: ['verif'] });
     },
@@ -79,12 +82,11 @@ export default function HeallyScreen() {
     },
   });
 
-  // Request verif mutation
   const [verifLoadingId, setVerifLoadingId] = useState<number | null>(null);
   const verifMutation = useMutation({
     mutationFn: heallyService.requestVerif,
     onMutate: (messageId) => setVerifLoadingId(messageId),
-    onSuccess: (data, messageId) => {
+    onSuccess: (_data, messageId) => {
       updateMessageVerif(messageId, 'pending');
       setVerifLoadingId(null);
       queryClient.invalidateQueries({ queryKey: ['verif'] });
@@ -101,28 +103,24 @@ export default function HeallyScreen() {
     sendMutation.mutate(msg as any);
   };
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 100);
   }, [messages.length, isTyping]);
 
-  const allMessages: (ChatMessage | 'typing')[] = isTyping
-    ? [...messages, 'typing']
-    : messages;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: colors.backgroundCard, borderBottomColor: colors.border }]}>
+      <SafeAreaView edges={['top']} style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View style={styles.heallyInfo}>
             <View style={[styles.heallyAvatar, { backgroundColor: colors.primary }]}>
-              <Text style={{ fontSize: 22 }}>🤖</Text>
+              <Icon name="sparkles" size="md" color={colors.onPrimary} />
               <View style={styles.onlineDot} />
             </View>
             <View>
               <Text style={[styles.heallyName, { color: colors.text }]}>Heally</Text>
-              <Text style={[styles.heallyStatus, { color: colors.textMuted }]}>AI Kesehatan · Perlu verifikasi dokter</Text>
+              <Text style={[styles.heallyStatus, { color: colors.textMuted }]}>
+                AI kesehatan · Perlu verifikasi dokter
+              </Text>
             </View>
           </View>
           <View style={[styles.aiBadge, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}>
@@ -131,26 +129,32 @@ export default function HeallyScreen() {
           </View>
         </View>
 
-        {/* Tab switcher */}
         <View style={[styles.tabSwitcher, { backgroundColor: colors.backgroundElement }]}>
           {[
-            { id: 'chat', label: '💬 Chat' },
-            { id: 'whatsapp', label: '📱 WhatsApp' },
-          ].map(({ id, label }) => (
+            { id: 'chat' as const, label: 'Chat', icon: 'chatbubble-outline' as IconName },
+            { id: 'whatsapp' as const, label: 'WhatsApp', icon: 'logo-whatsapp' as IconName },
+          ].map(({ id, label, icon }) => (
             <TouchableOpacity
               key={id}
-              onPress={() => setActiveTab(id as 'chat' | 'whatsapp')}
+              onPress={() => setActiveTab(id)}
               style={[
                 styles.tabBtn,
                 activeTab === id && { backgroundColor: colors.backgroundCard },
               ]}
               activeOpacity={0.7}
             >
-              <Text style={[
-                styles.tabBtnText,
-                { color: activeTab === id ? colors.text : colors.textSecondary },
-                activeTab === id && styles.tabBtnTextActive,
-              ]}>
+              <Icon
+                name={icon}
+                size="sm"
+                color={activeTab === id ? colors.text : colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: activeTab === id ? colors.text : colors.textSecondary },
+                  activeTab === id && styles.tabBtnTextActive,
+                ]}
+              >
                 {label}
               </Text>
             </TouchableOpacity>
@@ -162,27 +166,25 @@ export default function HeallyScreen() {
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={0}
         >
-          {/* Messages */}
           {isLoading ? (
             <View style={styles.center}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <ActivityIndicator color={colors.primary} />
             </View>
           ) : (
             <ScrollView
-              ref={listRef as any}
+              ref={listRef}
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
               onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
             >
               {messages.length === 0 && (
                 <View style={[styles.welcomeCard, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={{ fontSize: 32 }}>👋</Text>
+                  <Icon name="hand-left-outline" size="lg" color={colors.primary} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.welcomeTitle, { color: colors.primary }]}>Halo! Saya Heally</Text>
                     <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
-                      Asisten kesehatan AI Anda. Saya dapat membantu memahami rekam medis, membuat jadwal, dan menjawab pertanyaan kesehatan Anda.
+                      Asisten kesehatan AI Anda. Tanya rekam medis, jadwal, atau gejala.
                     </Text>
                   </View>
                 </View>
@@ -201,7 +203,6 @@ export default function HeallyScreen() {
             </ScrollView>
           )}
 
-          {/* Suggestions */}
           {messages.length <= 3 && !isTyping && (
             <ScrollView
               horizontal
@@ -221,18 +222,18 @@ export default function HeallyScreen() {
             </ScrollView>
           )}
 
-          {/* Input */}
-          <View style={[styles.inputBar, { backgroundColor: colors.backgroundCard, borderTopColor: colors.border }]}>
+          <View style={[styles.inputBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
             <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 value={input}
                 onChangeText={setInput}
-                placeholder="Tanya Heally tentang kesehatan Anda..."
+                placeholder="Tanya Heally..."
                 placeholderTextColor={colors.textMuted}
                 multiline
-                maxHeight={96}
                 onSubmitEditing={handleSend}
+                underlineColorAndroid="transparent"
+                selectionColor={colors.primary}
               />
             </View>
             <TouchableOpacity
@@ -245,34 +246,32 @@ export default function HeallyScreen() {
               activeOpacity={0.8}
             >
               {sendMutation.isPending ? (
-                <ActivityIndicator size="small" color="white" />
+                <ActivityIndicator color="white" />
               ) : (
-                <Text style={{ fontSize: 18 }}>➤</Text>
+                <Icon
+                  name="send"
+                  size="sm"
+                  color={input.trim() ? colors.onPrimary : colors.textMuted}
+                />
               )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       ) : (
-        // WhatsApp tab — UI only
         <ScrollView contentContainerStyle={styles.waContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.waConnected, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}>
-            <Text style={{ fontSize: 32 }}>📱</Text>
+          <View style={[styles.waConnected, { backgroundColor: colors.primaryLight, borderColor: colors.primaryMuted }]}>
+            <Icon name="logo-whatsapp" size="lg" color={colors.whatsapp} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.waTitle, { color: colors.text }]}>WhatsApp Terhubung</Text>
+              <Text style={[styles.waTitle, { color: colors.text }]}>WhatsApp terhubung</Text>
               <Text style={[styles.waPhone, { color: colors.textSecondary }]}>+62 812-3456-7890 · Aktif</Text>
             </View>
             <View style={styles.waOnlineDot} />
           </View>
 
-          {[
-            { icon: '💬', title: 'Kirim pesan ke Heally via WhatsApp', desc: 'Tanya pertanyaan kesehatan langsung dari WA Anda' },
-            { icon: '🤖', title: 'Heally membalas otomatis', desc: 'Berdasarkan rekam medis & data kesehatan Anda' },
-            { icon: '🩺', title: 'Verifikasi dokter bisa diminta', desc: 'Respons bertanda ⚠️ bisa dikirim ke dokter untuk diverifikasi' },
-            { icon: '🔄', title: 'Riwayat tersinkronisasi', desc: 'Semua percakapan WA muncul di tab Chat secara otomatis' },
-          ].map((item, i) => (
+          {WA_FEATURES.map((item, i) => (
             <View key={i} style={styles.waFeature}>
               <View style={[styles.waFeatureIcon, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                <Icon name={item.icon} size="md" color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.waFeatureTitle, { color: colors.text }]}>{item.title}</Text>
@@ -281,17 +280,14 @@ export default function HeallyScreen() {
             </View>
           ))}
 
-          <TouchableOpacity
-            style={[styles.waBtn, { backgroundColor: '#25D366' }]}
-            activeOpacity={0.8}
-          >
-            <Text style={{ fontSize: 22 }}>📲</Text>
+          <TouchableOpacity style={[styles.waBtn, { backgroundColor: colors.whatsapp }]} activeOpacity={0.8}>
+            <Icon name="logo-whatsapp" size="md" color="#FFFFFF" />
             <Text style={styles.waBtnText}>Chat via WhatsApp</Text>
           </TouchableOpacity>
 
           <View style={styles.waNote}>
             <Text style={[styles.waNoteText, { color: colors.textMuted }]}>
-              💡 Fitur WhatsApp akan segera tersedia. Stay tuned!
+              Fitur WhatsApp akan segera tersedia
             </Text>
           </View>
         </ScrollView>
@@ -303,43 +299,83 @@ export default function HeallyScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.sm },
+  headerTop: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.sm,
+  },
   heallyInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heallyAvatar: { width: 44, height: 44, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  onlineDot: { position: 'absolute', bottom: -1, right: -1, width: 12, height: 12, borderRadius: 6, backgroundColor: '#4ADE80', borderWidth: 2, borderColor: 'white' },
-  heallyName: { fontSize: FontSize.lg, fontFamily: 'PlayfairDisplay_600SemiBold' },
-  heallyStatus: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
-  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full, borderWidth: 1 },
-  aiBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F59E0B' },
-  aiBadgeText: { fontSize: FontSize.xs, fontFamily: 'Inter_600SemiBold' },
-  tabSwitcher: { flexDirection: 'row', margin: Spacing.sm, marginHorizontal: Spacing.lg, borderRadius: BorderRadius.full, padding: 4 },
-  tabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: BorderRadius.full },
-  tabBtnText: { fontSize: FontSize.xs, fontFamily: 'Inter_500Medium' },
-  tabBtnTextActive: { fontFamily: 'Inter_700Bold' },
+  heallyAvatar: {
+    width: 40, height: 40, borderRadius: BorderRadius.sm,
+    alignItems: 'center', justifyContent: 'center', position: 'relative',
+  },
+  onlineDot: {
+    position: 'absolute', bottom: -1, right: -1,
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: '#4ADE80', borderWidth: 2, borderColor: 'white',
+  },
+  heallyName: { fontSize: FontSize.lg, fontFamily: Fonts.bold },
+  heallyStatus: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  aiBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  aiBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D97706' },
+  aiBadgeText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  tabSwitcher: {
+    flexDirection: 'row', margin: Spacing.sm, marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.full, padding: 4,
+  },
+  tabBtn: {
+    flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 8,
+    alignItems: 'center', justifyContent: 'center', borderRadius: BorderRadius.full,
+  },
+  tabBtnText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  tabBtnTextActive: { fontFamily: Fonts.bold },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  messagesList: { padding: Spacing.base, gap: 0, paddingBottom: Spacing.lg },
-  welcomeCard: { flexDirection: 'row', gap: 12, padding: 14, borderRadius: BorderRadius.xl, marginBottom: 12, alignItems: 'flex-start' },
-  welcomeTitle: { fontSize: FontSize.sm, fontFamily: 'Inter_700Bold', marginBottom: 4 },
-  welcomeText: { fontSize: FontSize.xs, lineHeight: 17, fontFamily: 'Inter_400Regular' },
+  messagesList: { padding: Spacing.base, paddingBottom: Spacing.lg },
+  welcomeCard: {
+    flexDirection: 'row', gap: 12, padding: 14,
+    borderRadius: BorderRadius.md, marginBottom: 12, alignItems: 'flex-start',
+  },
+  welcomeTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold, marginBottom: 4 },
+  welcomeText: { fontSize: FontSize.xs, lineHeight: 17, fontFamily: Fonts.regular },
   suggestions: { paddingHorizontal: Spacing.base, paddingVertical: 8, gap: 8 },
-  suggestionChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: BorderRadius.full, borderWidth: 1 },
-  suggestionText: { fontSize: FontSize.xs, fontFamily: 'Inter_400Regular' },
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: Spacing.base, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingBottom: 24 },
-  inputWrapper: { flex: 1, borderRadius: BorderRadius.xl, paddingHorizontal: 14, paddingVertical: 10 },
-  input: { fontSize: FontSize.sm, lineHeight: 20, maxHeight: 96, fontFamily: 'Inter_400Regular' },
+  suggestionChip: {
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  suggestionText: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  inputBar: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    paddingHorizontal: Spacing.base, paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth, paddingBottom: 24,
+  },
+  inputWrapper: { flex: 1, borderRadius: BorderRadius.md, paddingHorizontal: 14, paddingVertical: 10 },
+  input: {
+    fontSize: FontSize.sm, lineHeight: 20, maxHeight: 96, fontFamily: Fonts.regular, padding: 0,
+    ...(Platform.OS === 'web' ? nativeReset : null),
+  },
   sendBtn: { width: 44, height: 44, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center' },
-  // WhatsApp tab
   waContent: { padding: Spacing.lg, gap: Spacing.base, paddingBottom: 100 },
-  waConnected: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: Spacing.base, borderRadius: BorderRadius.xl, borderWidth: 1 },
-  waTitle: { fontSize: FontSize.sm, fontFamily: 'Inter_700Bold' },
-  waPhone: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  waConnected: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: Spacing.base, borderRadius: BorderRadius.md, borderWidth: 1,
+  },
+  waTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  waPhone: { fontSize: FontSize.xs, marginTop: 2, fontFamily: Fonts.regular },
   waOnlineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#25D366' },
   waFeature: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  waFeatureIcon: { width: 40, height: 40, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  waFeatureTitle: { fontSize: FontSize.sm, fontFamily: 'Inter_600SemiBold' },
-  waFeatureDesc: { fontSize: FontSize.xs, marginTop: 2, fontFamily: 'Inter_400Regular' },
-  waBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: BorderRadius.full, shadowColor: '#25D366', shadowOpacity: 0.2, shadowRadius: 8, elevation: 2 },
-  waBtnText: { color: 'white', fontFamily: 'Inter_700Bold', fontSize: FontSize.md },
+  waFeatureIcon: {
+    width: 40, height: 40, borderRadius: BorderRadius.sm,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  waFeatureTitle: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
+  waFeatureDesc: { fontSize: FontSize.xs, marginTop: 2, fontFamily: Fonts.regular },
+  waBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: BorderRadius.md,
+  },
+  waBtnText: { color: 'white', fontFamily: Fonts.bold, fontSize: FontSize.md },
   waNote: { alignItems: 'center' },
-  waNoteText: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: 'Inter_400Regular' },
+  waNoteText: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
 });
