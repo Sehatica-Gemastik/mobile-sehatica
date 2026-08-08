@@ -49,5 +49,6 @@ export const API_ENDPOINTS = {
 
   // Doctors
   doctors: '/doctors',
+  doctorPartners: '/doctors/partners',
   doctorDetail: (id: number) => `/doctors/${id}`,
 } as const;

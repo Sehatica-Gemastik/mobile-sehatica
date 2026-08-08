@@ -97,8 +97,8 @@ export default function HeallyScreen() {
     },
   });
 
-  const handleSend = () => {
-    const msg = input.trim();
+  const handleSend = (text?: string) => {
+    const msg = (text ?? input).trim();
     if (!msg || sendMutation.isPending) return;
     sendMutation.mutate(msg as any);
   };
@@ -106,6 +106,19 @@ export default function HeallyScreen() {
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 100);
   }, [messages.length, isTyping]);
+
+  const welcomeMessage: ChatMessage = {
+    id: -1,
+    userId: 0,
+    role: 'assistant',
+    content: 'Halo! Saya Heally. Asisten kesehatan AI Anda — silakan pilih topik di bawah atau ketik pertanyaan.',
+    needsVerif: false,
+    verifStatus: null,
+    verifDoctorName: null,
+    verifNote: null,
+    fromWhatsApp: false,
+    createdAt: new Date().toISOString(),
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -179,15 +192,27 @@ export default function HeallyScreen() {
               onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
             >
               {messages.length === 0 && (
-                <View style={[styles.welcomeCard, { backgroundColor: colors.primaryLight }]}>
-                  <Icon name="hand-left-outline" size="lg" color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.welcomeTitle, { color: colors.primary }]}>Halo! Saya Heally</Text>
-                    <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
-                      Asisten kesehatan AI Anda. Tanya rekam medis, jadwal, atau gejala.
-                    </Text>
-                  </View>
-                </View>
+                <>
+                  <ChatBubble message={welcomeMessage} />
+                  {SUGGESTIONS.map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => handleSend(s)}
+                      disabled={sendMutation.isPending}
+                      activeOpacity={0.75}
+                      style={styles.templateRow}
+                    >
+                      <View
+                        style={[
+                          styles.templateBubble,
+                          { backgroundColor: colors.backgroundCard, borderColor: colors.border },
+                        ]}
+                      >
+                        <Text style={[styles.templateText, { color: colors.text }]}>{s}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
               )}
 
               {messages.map((msg) => (
@@ -203,25 +228,6 @@ export default function HeallyScreen() {
             </ScrollView>
           )}
 
-          {messages.length <= 3 && !isTyping && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.suggestions}
-            >
-              {SUGGESTIONS.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  onPress={() => setInput(s)}
-                  style={[styles.suggestionChip, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.suggestionText, { color: colors.textSecondary }]}>{s}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-
           <View style={[styles.inputBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
             <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement }]}>
               <TextInput
@@ -231,13 +237,13 @@ export default function HeallyScreen() {
                 placeholder="Tanya Heally..."
                 placeholderTextColor={colors.textMuted}
                 multiline
-                onSubmitEditing={handleSend}
+                onSubmitEditing={() => handleSend()}
                 underlineColorAndroid="transparent"
                 selectionColor={colors.primary}
               />
             </View>
             <TouchableOpacity
-              onPress={handleSend}
+              onPress={() => handleSend()}
               disabled={!input.trim() || sendMutation.isPending}
               style={[
                 styles.sendBtn,
@@ -333,18 +339,21 @@ const styles = StyleSheet.create({
   tabBtnTextActive: { fontFamily: Fonts.bold },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   messagesList: { padding: Spacing.base, paddingBottom: Spacing.lg },
-  welcomeCard: {
-    flexDirection: 'row', gap: 12, padding: 14,
-    borderRadius: BorderRadius.md, marginBottom: 12, alignItems: 'flex-start',
+  templateRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginBottom: 12,
+    paddingLeft: 36,
   },
-  welcomeTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold, marginBottom: 4 },
-  welcomeText: { fontSize: FontSize.xs, lineHeight: 17, fontFamily: Fonts.regular },
-  suggestions: { paddingHorizontal: Spacing.base, paddingVertical: 8, gap: 8 },
-  suggestionChip: {
-    paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: BorderRadius.full, borderWidth: 1,
+  templateBubble: {
+    maxWidth: '82%',
+    borderRadius: BorderRadius.lg,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  suggestionText: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  templateText: { fontSize: FontSize.sm, lineHeight: 20, fontFamily: Fonts.regular },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
     paddingHorizontal: Spacing.base, paddingVertical: 10,
