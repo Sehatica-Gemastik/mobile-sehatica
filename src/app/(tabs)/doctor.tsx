@@ -4,16 +4,16 @@ import {
   RefreshControl, ActivityIndicator, useColorScheme,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { Icon, IconName, ScreenHeader } from '@/components/ui';
-import { Doctor } from '@/types';
+import { EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
 
 export default function DoctorScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
-  const { data: doctors = [], isLoading, isRefetching, refetch } = useQuery({
+  const { data: doctors = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['doctors'],
     queryFn: doctorService.getAll,
     placeholderData: [],
@@ -35,26 +35,22 @@ export default function DoctorScreen() {
     );
   }
 
-  const displayDoctors: Doctor[] = doctors.length > 0 ? doctors : [
-    { id: 1, name: 'Dr. Andi Kusuma, Sp.PD', specialty: 'Penyakit Dalam', rating: 4.9, reviewCount: 124, verifiedCount: 87, isAvailable: true, bio: 'Spesialis penyakit dalam berpengalaman 15 tahun', avatarInitials: 'AK', colorScheme: 'blue' },
-    { id: 2, name: 'Dr. Sarah Lestari, Sp.J', specialty: 'Jantung & Pembuluh Darah', rating: 4.8, reviewCount: 98, verifiedCount: 65, isAvailable: false, bio: 'Spesialis jantung lulusan UI', avatarInitials: 'SL', colorScheme: 'blue' },
-    { id: 3, name: 'Dr. Budi Santoso, Sp.N', specialty: 'Neurologi', rating: 4.7, reviewCount: 72, verifiedCount: 43, isAvailable: true, bio: 'Ahli saraf dan stroke', avatarInitials: 'BS', colorScheme: 'blue' },
-  ];
-
   const stats: { label: string; value: string; icon: IconName }[] = [
     {
       label: 'Verifikasi',
-      value: `${displayDoctors.reduce((a, d) => a + d.verifiedCount, 0)}+`,
+      value: `${doctors.reduce((a, d) => a + d.verifiedCount, 0)}`,
       icon: 'checkmark-circle-outline',
     },
     {
       label: 'Dokter aktif',
-      value: `${displayDoctors.filter((d) => d.isAvailable).length}`,
+      value: `${doctors.filter((d) => d.isAvailable).length}`,
       icon: 'medkit-outline',
     },
     {
       label: 'Avg rating',
-      value: `${(displayDoctors.reduce((a, d) => a + d.rating, 0) / displayDoctors.length).toFixed(1)}`,
+      value: doctors.length
+        ? `${(doctors.reduce((a, d) => a + d.rating, 0) / doctors.length).toFixed(1)}`
+        : '—',
       icon: 'star-outline',
     },
   ];
@@ -63,7 +59,7 @@ export default function DoctorScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Dokter partner"
-        subtitle={`${displayDoctors.filter((d) => d.isAvailable).length} dokter online sekarang`}
+        subtitle={`${doctors.filter((d) => d.isAvailable).length} dokter tersedia untuk review`}
       >
         <View style={[styles.verifBanner, { backgroundColor: colors.primaryLight }]}>
           <Icon name="medkit-outline" size="sm" color={colors.primary} />
@@ -77,6 +73,20 @@ export default function DoctorScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
+      ) : error ? (
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Daftar dokter tidak dapat dibuka"
+          description={error instanceof Error ? error.message : 'Periksa koneksi lalu coba lagi.'}
+          actionLabel="Coba lagi"
+          onAction={refetch}
+        />
+      ) : doctors.length === 0 ? (
+        <EmptyState
+          icon="medkit-outline"
+          title="Belum ada dokter tersedia"
+          description="Dokter terverifikasi akan muncul di sini setelah tersedia untuk menerima review."
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.list}
@@ -96,7 +106,7 @@ export default function DoctorScreen() {
           </View>
 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Dokter tersedia</Text>
-          {displayDoctors.map((doctor) => (
+          {doctors.map((doctor) => (
             <View key={doctor.id} style={[styles.doctorCard, { borderColor: colors.border }]}>
               <View style={styles.doctorTop}>
                 <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
@@ -171,6 +181,7 @@ export default function DoctorScreen() {
                 ]}
                 activeOpacity={0.8}
                 disabled={!doctor.isAvailable}
+                onPress={() => router.push('/(tabs)/heally')}
               >
                 <Icon
                   name="call-outline"
@@ -183,7 +194,7 @@ export default function DoctorScreen() {
                     { color: doctor.isAvailable ? 'white' : colors.textMuted },
                   ]}
                 >
-                  {doctor.isAvailable ? 'Konsultasi sekarang' : 'Sedang tidak tersedia'}
+                  {doctor.isAvailable ? 'Buka Heally untuk review' : 'Sedang tidak tersedia'}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -23,31 +23,14 @@ export const API_ENDPOINTS = {
   me: '/auth/me',
   updateProfile: '/auth/profile',
 
-  // Home
-  dashboard: '/home/dashboard',
-
-  // Medical Records
-  records: '/records',
-  recordOcr: '/records/ocr',
-  recordVoice: '/records/voice',
-
-  // Schedules
-  schedules: '/schedules',
-  toggleSchedule: (id: number) => `/schedules/${id}/toggle`,
-  deleteSchedule: (id: number) => `/schedules/${id}`,
-  aiGenerateSchedule: '/schedules/ai-generate',
-
-  // Heally AI
-  heallyMessages: '/heally/messages',
-  heallyChat: '/heally/chat',
-  heallyVerifRequest: (messageId: number) => `/heally/verif-request/${messageId}`,
-
-  // Verifications
-  verifRequests: '/verif',
-  verifApprove: (id: number) => `/verif/${id}/approve`,
-  verifRevise: (id: number) => `/verif/${id}/revise`,
+  // Transient AI processing
+  aiOcr: '/ai/ocr',
+  aiGenerateSchedule: '/ai/schedules/generate',
+  aiChat: '/ai/chat',
 
   // Doctors
   doctors: '/doctors',
   doctorDetail: (id: number) => `/doctors/${id}`,
+  reviews: '/reviews',
+  myReviews: '/reviews/mine',
 } as const;

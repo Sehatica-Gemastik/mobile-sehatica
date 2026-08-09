@@ -27,8 +27,12 @@ export default function RegisterScreen() {
       Alert.alert('Perhatian', 'Nama, email, dan password harus diisi');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Perhatian', 'Password minimal 6 karakter');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert('Perhatian', 'Format email tidak valid');
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Perhatian', 'Password minimal 8 karakter');
       return;
     }
 
@@ -75,6 +79,7 @@ export default function RegisterScreen() {
               onChangeText={setName}
               placeholder="Nama Anda"
               autoCapitalize="words"
+              maxLength={255}
             />
             <TextField
               label="Email"
@@ -84,17 +89,21 @@ export default function RegisterScreen() {
               placeholder="nama@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              maxLength={255}
             />
             <TextField
               label="Password"
               icon="lock-closed-outline"
               value={password}
               onChangeText={setPassword}
-              placeholder="Min. 6 karakter"
+              placeholder="Min. 8 karakter"
               secureTextEntry={!showPassword}
               secureToggle
               showSecure={showPassword}
               onToggleSecure={() => setShowPassword((v) => !v)}
+              autoComplete="new-password"
+              maxLength={128}
             />
             <TextField
               label="Nomor telepon (opsional)"
@@ -103,12 +112,14 @@ export default function RegisterScreen() {
               onChangeText={setPhone}
               placeholder="+62812xxxxx"
               keyboardType="phone-pad"
+              autoComplete="tel"
+              maxLength={20}
             />
 
             <View style={[styles.hint, { backgroundColor: colors.primaryLight }]}>
               <Icon name="information-circle-outline" size="sm" color={colors.primary} />
               <Text style={[styles.hintText, { color: colors.primaryDark }]}>
-                Setelah daftar, lengkapi kondisi medis agar Heally lebih akurat.
+                Data kesehatan Anda tetap disimpan secara lokal di perangkat.
               </Text>
             </View>
 

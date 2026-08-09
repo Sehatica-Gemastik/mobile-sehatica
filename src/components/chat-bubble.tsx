@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Animated, useColorScheme,
 } from 'react-native';
@@ -9,7 +9,7 @@ import { Icon } from '@/components/ui';
 
 interface ChatBubbleProps {
   message: ChatMessage;
-  onRequestVerif?: (messageId: number) => void;
+  onRequestVerif?: (message: ChatMessage) => void;
   isVerifLoading?: boolean;
 }
 
@@ -47,15 +47,15 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
   const colors = Colors[scheme];
   const isUser = message.role === 'user';
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(isUser ? 16 : -16)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(isUser ? 16 : -16));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const time = new Date(message.createdAt).toLocaleTimeString('id-ID', {
     hour: '2-digit',
@@ -88,25 +88,45 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
           <RenderContent text={message.content} isUser={isUser} />
         </View>
 
-        {!isUser && message.needsVerif && (
+        {!isUser && message.safetyLevel !== 'general' ? (
+          <View style={[
+            styles.safetyNote,
+            message.safetyLevel === 'urgent'
+              ? { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }
+              : { backgroundColor: colors.amberLight, borderColor: '#FDE68A' },
+          ]}>
+            <Icon
+              name="warning-outline"
+              size="sm"
+              color={message.safetyLevel === 'urgent' ? '#B91C1C' : colors.amber}
+            />
+            <Text style={[
+              styles.safetyText,
+              { color: message.safetyLevel === 'urgent' ? '#B91C1C' : colors.amber },
+            ]}>
+              {message.safetyLevel === 'urgent'
+                ? 'Kemungkinan darurat: hubungi layanan darurat atau IGD terdekat.'
+                : 'Saran ini sebaiknya diverifikasi dokter sebelum diterapkan.'}
+            </Text>
+          </View>
+        ) : null}
+
+        {!isUser && message.needsVerif ? (
           <View>
-            {message.verifStatus === 'pending' ? (
-              <VerifBadge status="pending" />
-            ) : !message.verifStatus ? (
-              <RequestVerifButton
-                onPress={() => onRequestVerif?.(message.id)}
-                loading={isVerifLoading}
-              />
-            ) : null}
-            {message.verifStatus && message.verifStatus !== null ? (
+            {message.verifStatus ? (
               <VerifBadge
                 status={message.verifStatus}
                 doctorName={message.verifDoctorName}
                 note={message.verifNote}
               />
+            ) : onRequestVerif ? (
+              <RequestVerifButton
+                onPress={() => onRequestVerif?.(message)}
+                loading={isVerifLoading}
+              />
             ) : null}
           </View>
-        )}
+        ) : null}
 
         <Text
           style={[
@@ -146,6 +166,11 @@ const styles = StyleSheet.create({
   bubbleUser: { borderBottomRightRadius: 4 },
   bubbleAI: { borderWidth: 1, borderBottomLeftRadius: 4 },
   bubbleText: { fontSize: FontSize.sm, lineHeight: 20, fontFamily: Fonts.regular },
+  safetyNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+    padding: 8, borderWidth: 1, borderRadius: BorderRadius.sm,
+  },
+  safetyText: { flex: 1, fontSize: FontSize.xs, lineHeight: 17, fontFamily: Fonts.medium },
   timestamp: { fontSize: FontSize.xs, paddingHorizontal: 4, fontFamily: Fonts.regular },
   timestampUser: { textAlign: 'right' },
 });

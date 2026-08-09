@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, useColorScheme,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Modal, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { heallyService } from '@/services/heally.service';
+import { doctorService } from '@/services/doctor.service';
+import { reviewService } from '@/services/review.service';
 import { useHeallyStore } from '@/store/heally-store';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { ChatBubble } from '@/components/chat-bubble';
@@ -32,16 +34,18 @@ const WA_FEATURES: { icon: IconName; title: string; desc: string }[] = [
 export default function HeallyScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const queryClient = useQueryClient();
   const listRef = useRef<ScrollView>(null);
+  const [reviewMessage, setReviewMessage] = useState<ChatMessage | null>(null);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
+  const [patientNote, setPatientNote] = useState('');
 
   const {
     messages, isTyping, activeTab, input,
-    setMessages, addMessage, updateMessageVerif,
+    setMessages, addMessage,
     setTyping, setActiveTab, setInput,
   } = useHeallyStore();
 
-  const { isLoading } = useQuery({
+  const { error: messagesError, isLoading } = useQuery({
     queryKey: ['heally-messages'],
     queryFn: async () => {
       const msgs = await heallyService.getMessages();
@@ -51,57 +55,90 @@ export default function HeallyScreen() {
     staleTime: 0,
   });
 
+  const { data: doctors = [], isLoading: doctorsLoading } = useQuery({
+    queryKey: ['doctors'],
+    queryFn: doctorService.getAll,
+    enabled: Boolean(reviewMessage),
+  });
+  const availableDoctors = doctors.filter((doctor) => doctor.isAvailable);
+  const effectiveDoctorId = selectedDoctorId ?? availableDoctors[0]?.id ?? null;
+
+  useQuery({
+    queryKey: ['reviews', 'mine'],
+    queryFn: async () => {
+      const synced = await reviewService.syncMine();
+      setMessages(synced);
+      return synced.length;
+    },
+    retry: 1,
+  });
+
   const sendMutation = useMutation({
-    mutationFn: heallyService.sendMessage,
-    onMutate: ({ message }: any) => {
-      const optimisticUserMsg: ChatMessage = {
-        id: Date.now(),
-        userId: 0,
-        role: 'user',
-        content: message,
-        needsVerif: false,
-        verifStatus: null,
-        verifDoctorName: null,
-        verifNote: null,
-        fromWhatsApp: false,
-        createdAt: new Date().toISOString(),
-      };
-      addMessage(optimisticUserMsg);
-      setInput('');
-      setTyping(true);
-    },
-    onSuccess: (data) => {
+    mutationFn: heallyService.replyTo,
+    onSuccess: (aiMessage) => {
       setTyping(false);
-      queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
-      addMessage(data.aiMessage);
-      queryClient.invalidateQueries({ queryKey: ['verif'] });
+      addMessage(aiMessage);
     },
     onError: (err: any) => {
       setTyping(false);
-      Alert.alert('Gagal', err.message ?? 'Gagal menghubungi Heally. Coba lagi.');
+      Alert.alert('Pesan tersimpan', err.message ?? 'Heally membutuhkan internet untuk menjawab. Coba lagi nanti.');
     },
   });
 
-  const [verifLoadingId, setVerifLoadingId] = useState<number | null>(null);
-  const verifMutation = useMutation({
-    mutationFn: heallyService.requestVerif,
-    onMutate: (messageId) => setVerifLoadingId(messageId),
-    onSuccess: (_data, messageId) => {
-      updateMessageVerif(messageId, 'pending');
-      setVerifLoadingId(null);
-      queryClient.invalidateQueries({ queryKey: ['verif'] });
-    },
-    onError: (err: any) => {
-      setVerifLoadingId(null);
-      Alert.alert('Gagal', err.message);
-    },
+  const clearMutation = useMutation({
+    mutationFn: heallyService.clear,
+    onSuccess: () => setMessages([]),
+    onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
-  const handleSend = () => {
+  const submitReviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!reviewMessage) throw new Error('Jawaban Heally tidak tersedia');
+      const doctor = doctors.find((item) => item.id === effectiveDoctorId);
+      if (!doctor) throw new Error('Pilih dokter yang tersedia');
+      const messageIndex = messages.findIndex((item) => item.id === reviewMessage.id);
+      const patientQuestion = messages
+        .slice(0, messageIndex)
+        .reverse()
+        .find((item) => item.role === 'user')?.content;
+      if (!patientQuestion) throw new Error('Pertanyaan terkait tidak ditemukan');
+      await reviewService.submit(reviewMessage, patientQuestion, doctor, patientNote);
+      return reviewService.markPending(reviewMessage.id, doctor.name);
+    },
+    onSuccess: (synced) => {
+      setMessages(synced);
+      setReviewMessage(null);
+      setSelectedDoctorId(null);
+      setPatientNote('');
+      Alert.alert('Terkirim', 'Dokter dapat melihat jawaban yang Anda setujui selama 7 hari.');
+    },
+    onError: (error: Error) => Alert.alert('Review gagal dikirim', error.message),
+  });
+
+  const handleSend = async () => {
     const msg = input.trim();
-    if (!msg || sendMutation.isPending) return;
-    sendMutation.mutate(msg as any);
+    if (!msg || sendMutation.isPending || isTyping) return;
+    setInput('');
+    setTyping(true);
+    try {
+      const userMessage = await heallyService.saveUserMessage(msg);
+      addMessage(userMessage);
+      // ponytail: failed replies leave the question local; add explicit retry when offline queue UX is defined.
+      sendMutation.mutate(userMessage);
+    } catch (error) {
+      setTyping(false);
+      Alert.alert('Gagal', error instanceof Error ? error.message : 'Pesan tidak dapat disimpan');
+    }
   };
+
+  const confirmClear = () => Alert.alert(
+    'Hapus percakapan?',
+    'Semua riwayat Heally di perangkat ini akan dihapus.',
+    [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: () => clearMutation.mutate() },
+    ]
+  );
 
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 100);
@@ -123,9 +160,24 @@ export default function HeallyScreen() {
               </Text>
             </View>
           </View>
-          <View style={[styles.aiBadge, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}>
-            <View style={styles.aiBadgeDot} />
-            <Text style={[styles.aiBadgeText, { color: colors.amber }]}>AI Unverified</Text>
+          <View style={styles.headerActions}>
+            <View style={[styles.aiBadge, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}>
+              <View style={styles.aiBadgeDot} />
+              <Text style={[styles.aiBadgeText, { color: colors.amber }]}>AI</Text>
+            </View>
+            {messages.length > 0 ? (
+              <TouchableOpacity
+                accessibilityLabel="Hapus percakapan Heally"
+                disabled={isTyping}
+                onPress={confirmClear}
+                style={[styles.clearButton, {
+                  backgroundColor: colors.backgroundElement,
+                  opacity: isTyping ? 0.45 : 1,
+                }]}
+              >
+                <Icon name="trash-outline" size="sm" color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
 
@@ -171,6 +223,12 @@ export default function HeallyScreen() {
             <View style={styles.center}>
               <ActivityIndicator color={colors.primary} />
             </View>
+          ) : messagesError ? (
+            <View style={styles.center}>
+              <Text style={[styles.loadError, { color: colors.textSecondary }]}>
+                {messagesError instanceof Error ? messagesError.message : 'Riwayat Heally tidak tersedia'}
+              </Text>
+            </View>
           ) : (
             <ScrollView
               ref={listRef}
@@ -194,8 +252,8 @@ export default function HeallyScreen() {
                 <ChatBubble
                   key={msg.id}
                   message={msg}
-                  onRequestVerif={(id) => verifMutation.mutate(id)}
-                  isVerifLoading={verifLoadingId === msg.id}
+                  onRequestVerif={setReviewMessage}
+                  isVerifLoading={submitReviewMutation.isPending}
                 />
               ))}
 
@@ -238,7 +296,7 @@ export default function HeallyScreen() {
             </View>
             <TouchableOpacity
               onPress={handleSend}
-              disabled={!input.trim() || sendMutation.isPending}
+              disabled={!input.trim() || sendMutation.isPending || isTyping}
               style={[
                 styles.sendBtn,
                 { backgroundColor: input.trim() ? colors.primary : colors.backgroundElement },
@@ -262,10 +320,9 @@ export default function HeallyScreen() {
           <View style={[styles.waConnected, { backgroundColor: colors.primaryLight, borderColor: colors.primaryMuted }]}>
             <Icon name="logo-whatsapp" size="lg" color={colors.whatsapp} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.waTitle, { color: colors.text }]}>WhatsApp terhubung</Text>
-              <Text style={[styles.waPhone, { color: colors.textSecondary }]}>+62 812-3456-7890 · Aktif</Text>
+              <Text style={[styles.waTitle, { color: colors.text }]}>WhatsApp belum tersedia</Text>
+              <Text style={[styles.waPhone, { color: colors.textSecondary }]}>Tidak ada nomor yang terhubung</Text>
             </View>
-            <View style={styles.waOnlineDot} />
           </View>
 
           {WA_FEATURES.map((item, i) => (
@@ -280,9 +337,9 @@ export default function HeallyScreen() {
             </View>
           ))}
 
-          <TouchableOpacity style={[styles.waBtn, { backgroundColor: colors.whatsapp }]} activeOpacity={0.8}>
-            <Icon name="logo-whatsapp" size="md" color="#FFFFFF" />
-            <Text style={styles.waBtnText}>Chat via WhatsApp</Text>
+          <TouchableOpacity disabled style={[styles.waBtn, { backgroundColor: colors.backgroundElement }]}>
+            <Icon name="logo-whatsapp" size="md" color={colors.textMuted} />
+            <Text style={[styles.waBtnText, { color: colors.textMuted }]}>Segera hadir</Text>
           </TouchableOpacity>
 
           <View style={styles.waNote}>
@@ -292,6 +349,94 @@ export default function HeallyScreen() {
           </View>
         </ScrollView>
       )}
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={Boolean(reviewMessage)}
+        onRequestClose={() => setReviewMessage(null)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setReviewMessage(null)} />
+          <View style={[styles.reviewCard, { backgroundColor: colors.backgroundCard }]}>
+            <View style={styles.reviewHeader}>
+              <View style={[styles.reviewIcon, { backgroundColor: colors.primaryLight }]}>
+                <Icon name="shield-checkmark-outline" size="md" color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.reviewTitle, { color: colors.text }]}>Minta review dokter</Text>
+                <Text style={[styles.reviewSubtitle, { color: colors.textSecondary }]}>Persetujuan berlaku untuk jawaban ini saja</Text>
+              </View>
+              <TouchableOpacity accessibilityLabel="Tutup" onPress={() => setReviewMessage(null)}>
+                <Icon name="close" size="md" color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.consentBox, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.consentText, { color: colors.primaryDark }]}>Yang dikirim hanya pertanyaan Anda, jawaban Heally, level keamanan, dan catatan di bawah. Rekam medis lain tetap di perangkat.</Text>
+            </View>
+
+            <Text style={[styles.reviewLabel, { color: colors.textSecondary }]}>Pilih dokter</Text>
+            {doctorsLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : availableDoctors.length === 0 ? (
+              <Text style={[styles.reviewEmpty, { color: colors.textMuted }]}>Belum ada dokter yang tersedia.</Text>
+            ) : (
+              <ScrollView style={styles.doctorPicker} showsVerticalScrollIndicator={false}>
+                {availableDoctors.map((doctor) => {
+                  const selected = effectiveDoctorId === doctor.id;
+                  return (
+                    <TouchableOpacity
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      key={doctor.id}
+                      onPress={() => setSelectedDoctorId(doctor.id)}
+                      style={[
+                        styles.doctorOption,
+                        { borderColor: selected ? colors.primary : colors.border },
+                        selected && { backgroundColor: colors.primaryLight },
+                      ]}
+                    >
+                      <View style={[styles.doctorAvatar, { backgroundColor: colors.backgroundElement }]}>
+                        <Text style={[styles.doctorAvatarText, { color: colors.primary }]}>{doctor.avatarInitials}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.doctorOptionName, { color: colors.text }]}>{doctor.name}</Text>
+                        <Text style={[styles.doctorOptionMeta, { color: colors.textSecondary }]}>{doctor.specialty} · {doctor.verifiedCount} review</Text>
+                      </View>
+                      <Icon name={selected ? 'radio-button-on' : 'radio-button-off'} size="md" color={selected ? colors.primary : colors.textMuted} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <Text style={[styles.reviewLabel, { color: colors.textSecondary }]}>Catatan untuk dokter (opsional)</Text>
+            <TextInput
+              value={patientNote}
+              onChangeText={setPatientNote}
+              maxLength={1000}
+              multiline
+              placeholder="Contoh: Saya ingin memastikan saran olahraga ini aman."
+              placeholderTextColor={colors.textMuted}
+              style={[styles.reviewNote, { color: colors.text, borderColor: colors.border }]}
+            />
+
+            <View style={styles.reviewActions}>
+              <TouchableOpacity style={[styles.reviewCancel, { borderColor: colors.border }]} onPress={() => setReviewMessage(null)}>
+                <Text style={[styles.reviewCancelText, { color: colors.textSecondary }]}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={!effectiveDoctorId || submitReviewMutation.isPending}
+                onPress={() => submitReviewMutation.mutate()}
+                style={[styles.reviewSubmit, { backgroundColor: colors.primary, opacity: effectiveDoctorId ? 1 : 0.45 }]}
+              >
+                {submitReviewMutation.isPending ? <ActivityIndicator color="white" /> : <Text style={styles.reviewSubmitText}>Setujui dan kirim</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -303,6 +448,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.sm,
   },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  clearButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   heallyInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   heallyAvatar: {
     width: 40, height: 40, borderRadius: BorderRadius.sm,
@@ -332,6 +479,7 @@ const styles = StyleSheet.create({
   tabBtnText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
   tabBtnTextActive: { fontFamily: Fonts.bold },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadError: { padding: Spacing.xl, textAlign: 'center', fontSize: FontSize.sm, fontFamily: Fonts.medium },
   messagesList: { padding: Spacing.base, paddingBottom: Spacing.lg },
   welcomeCard: {
     flexDirection: 'row', gap: 12, padding: 14,
@@ -363,7 +511,6 @@ const styles = StyleSheet.create({
   },
   waTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   waPhone: { fontSize: FontSize.xs, marginTop: 2, fontFamily: Fonts.regular },
-  waOnlineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#25D366' },
   waFeature: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   waFeatureIcon: {
     width: 40, height: 40, borderRadius: BorderRadius.sm,
@@ -378,4 +525,30 @@ const styles = StyleSheet.create({
   waBtnText: { color: 'white', fontFamily: Fonts.bold, fontSize: FontSize.md },
   waNote: { alignItems: 'center' },
   waNoteText: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  modalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(15, 35, 31, 0.48)' },
+  reviewCard: {
+    maxHeight: '88%', padding: Spacing.lg, paddingBottom: 28,
+    borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, gap: 12,
+  },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  reviewIcon: { width: 40, height: 40, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
+  reviewTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold },
+  reviewSubtitle: { fontSize: FontSize.xs, fontFamily: Fonts.regular, marginTop: 2 },
+  consentBox: { borderRadius: BorderRadius.sm, padding: 12 },
+  consentText: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.medium },
+  reviewLabel: { fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  reviewEmpty: { fontSize: FontSize.sm, fontFamily: Fonts.regular, textAlign: 'center', padding: 16 },
+  doctorPicker: { maxHeight: 176 },
+  doctorOption: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: BorderRadius.md, padding: 10, marginBottom: 8 },
+  doctorAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  doctorAvatarText: { fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  doctorOptionName: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  doctorOptionMeta: { fontSize: FontSize.xs, fontFamily: Fonts.regular, marginTop: 2 },
+  reviewNote: { minHeight: 76, borderWidth: 1, borderRadius: BorderRadius.md, padding: 12, textAlignVertical: 'top', fontSize: FontSize.sm, fontFamily: Fonts.regular },
+  reviewActions: { flexDirection: 'row', gap: 10, marginTop: 2 },
+  reviewCancel: { borderWidth: 1, borderRadius: BorderRadius.md, paddingHorizontal: 18, minHeight: 46, alignItems: 'center', justifyContent: 'center' },
+  reviewCancelText: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  reviewSubmit: { flex: 1, borderRadius: BorderRadius.md, minHeight: 46, alignItems: 'center', justifyContent: 'center' },
+  reviewSubmitText: { color: 'white', fontSize: FontSize.sm, fontFamily: Fonts.bold },
 });

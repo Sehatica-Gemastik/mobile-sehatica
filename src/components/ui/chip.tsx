@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, useColorScheme, ViewStyle } from 'react-native';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
 import { Icon, IconName } from './icon';
 
 type Props = {

@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.sehatica.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#F0FDF4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -32,7 +33,16 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

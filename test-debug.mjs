@@ -9,7 +9,7 @@ import { chromium } from 'playwright';
   try {
     // Wait until network is idle
     await page.waitForLoadState('networkidle', { timeout: 10000 });
-  } catch(e) {
+  } catch {
     console.log('Network idle timeout');
   }
   const content = await page.content();

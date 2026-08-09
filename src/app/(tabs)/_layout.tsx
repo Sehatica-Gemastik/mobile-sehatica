@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, useColorScheme } from 'react-native';
 import { Slot } from 'expo-router';
 import { BottomTabBar } from '@/components/app-tabs';
