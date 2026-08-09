@@ -10,7 +10,7 @@ import { heallyService } from '@/services/heally.service';
 import { useHeallyStore } from '@/store/heally-store';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { ChatBubble } from '@/components/chat-bubble';
-import { TypingIndicator } from '@/components/typing-indicator';
+import { ThinkingDraft } from '@/components/thinking-draft';
 import { Icon, IconName } from '@/components/ui';
 import { ChatMessage } from '@/types';
 
@@ -52,8 +52,8 @@ export default function HeallyScreen() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: heallyService.sendMessage,
-    onMutate: ({ message }: any) => {
+    mutationFn: (message: string) => heallyService.sendMessage(message),
+    onMutate: (message: string) => {
       const optimisticUserMsg: ChatMessage = {
         id: Date.now(),
         userId: 0,
@@ -100,7 +100,7 @@ export default function HeallyScreen() {
   const handleSend = (text?: string) => {
     const msg = (text ?? input).trim();
     if (!msg || sendMutation.isPending) return;
-    sendMutation.mutate(msg as any);
+    sendMutation.mutate(msg);
   };
 
   useEffect(() => {
@@ -224,7 +224,7 @@ export default function HeallyScreen() {
                 />
               ))}
 
-              {isTyping && <TypingIndicator />}
+              {isTyping && <ThinkingDraft />}
             </ScrollView>
           )}
 
