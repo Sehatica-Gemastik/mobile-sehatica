@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Animated, StyleSheet, useColorScheme } from 'react-native';
 import { Colors, BorderRadius } from '@/constants/theme';
 import { Icon } from '@/components/ui';
@@ -7,11 +7,11 @@ export function TypingIndicator() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
-  const dots = [
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-  ];
+  const [dots] = useState(() => [
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]);
 
   useEffect(() => {
     const animations = dots.map((dot, i) =>
@@ -26,7 +26,7 @@ export function TypingIndicator() {
     );
     Animated.parallel(animations).start();
     return () => animations.forEach((a) => a.stop());
-  }, []);
+  }, [dots]);
 
   return (
     <View style={styles.container}>

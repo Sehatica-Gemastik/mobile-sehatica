@@ -10,7 +10,7 @@ class ApiError extends Error {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken, setAccessToken, clearAuth } = useAuthStore.getState();
+  const { refreshToken, setTokens, clearAuth } = useAuthStore.getState();
   if (!refreshToken) return null;
 
   try {
@@ -24,13 +24,29 @@ async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
     const data = await res.json();
-    const newToken = data.data?.accessToken;
-    if (newToken) setAccessToken(newToken);
-    return newToken;
+    const newAccessToken = data.data?.accessToken;
+    const newRefreshToken = data.data?.refreshToken;
+    if (!newAccessToken || !newRefreshToken) {
+      await clearAuth();
+      return null;
+    }
+    await setTokens(newAccessToken, newRefreshToken);
+    return newAccessToken;
   } catch {
     await clearAuth();
     return null;
   }
+}
+
+let refreshPromise: Promise<string | null> | null = null;
+
+function refreshOnce(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
 }
 
 async function request<T>(
@@ -55,7 +71,7 @@ async function request<T>(
 
   // Handle 401 — try refresh once
   if (response.status === 401 && retry) {
-    const newToken = await refreshAccessToken();
+    const newToken = await refreshOnce();
     if (newToken) {
       return request<T>(endpoint, options, false);
     }

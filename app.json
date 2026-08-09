@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.sehatica.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#F0FDF4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,6 +41,7 @@
           "barcodeScannerEnabled": true
         }
       ],
+      "expo-secure-store",
       [
         "expo-notifications",
         {
@@ -47,7 +49,14 @@
           "color": "#16A34A",
           "sounds": []
         }
-      ]
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
