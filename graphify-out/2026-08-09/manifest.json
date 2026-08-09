@@ -25,8 +25,8 @@
     "semantic_hash": "35cb915a0bebbebbe69cf7815e174462"
   },
   "package.json": {
-    "mtime": 1786212891.189256,
-    "ast_hash": "75d4f4daee6c7f7f634c32ef5d51a5e0",
+    "mtime": 1786212743.5431242,
+    "ast_hash": "68641d5949d43dc31c483f1133b21a18",
     "semantic_hash": ""
   },
   "scripts/reset-project.js": {

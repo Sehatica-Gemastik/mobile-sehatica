@@ -1,11 +1,11 @@
 # Graph Report - mobile-sehatica  (2026-08-09)
 
 ## Corpus Check
-- 80 files · ~80,960 words
+- 80 files · ~80,956 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 515 nodes · 1006 edges · 69 communities (20 shown, 49 thin omitted)
+- 514 nodes · 1005 edges · 67 communities (18 shown, 49 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.66)
 - Token cost: 0 input · 0 output
 
@@ -15,9 +15,9 @@
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- ui/index.ts
 - theme.ts
-- auth-store.ts
+- explore.tsx
+- useAuthStore
 - expo
 - expo-constants
 - health-db.ts
@@ -26,8 +26,7 @@
 - TypeScript Configuration
 - expo
 - Project Reset Script
-- animated-icon.tsx
-- animated-icon.web.tsx
+- expo-sqlite
 - App Icon Assets
 - Project Documentation
 - @expo-google-fonts/dm-sans
@@ -56,7 +55,6 @@
 - dependencies
 - Screen Management
 - Worklets Library
-- expo-crypto
 - State Management
 - Layout Diagrams
 - Android Icon Background
@@ -102,8 +100,8 @@
   src/app/(auth)/login.tsx → src/store/auth-store.ts
 - `RegisterScreen()` --calls--> `useAuthStore`  [EXTRACTED]
   src/app/(auth)/register.tsx → src/store/auth-store.ts
-- `HomeScreen()` --calls--> `localDateKey()`  [EXTRACTED]
-  src/app/(tabs)/index.tsx → src/utils/local-date.ts
+- `HomeScreen()` --calls--> `useAuthStore`  [EXTRACTED]
+  src/app/(tabs)/index.tsx → src/store/auth-store.ts
 
 ## Import Cycles
 - None detected.
@@ -111,23 +109,23 @@
 ## Hyperedges (group relationships)
 - **Expo Branding Assets** — assets_expo_icon_assets_expo_symbol_2_svg, assets_images_expo_logo_png, assets_images_expo_badge_png, assets_images_expo_badge_white_png [EXTRACTED 1.00]
 
-## Communities (69 total, 49 thin omitted)
+## Communities (67 total, 49 thin omitted)
 
-### Community 0 - "ui/index.ts"
-Cohesion: 0.06
-Nodes (64): styles, HeallyScreen(), styles, SUGGESTIONS, WA_FEATURES, ADD_TYPES, AddType, FILTERS (+56 more)
+### Community 0 - "theme.ts"
+Cohesion: 0.07
+Nodes (65): styles, styles, styles, styles, SUGGESTIONS, WA_FEATURES, styles, ADD_TYPES (+57 more)
 
-### Community 1 - "theme.ts"
-Cohesion: 0.14
-Nodes (22): expo-image, styles, TabTwoScreen(), ExternalLink(), Props, HintRowProps, styles, styles (+14 more)
+### Community 1 - "explore.tsx"
+Cohesion: 0.08
+Nodes (28): expo-image, styles, TabTwoScreen(), glowKeyframe, keyframe, logoKeyframe, styles, glowKeyframe (+20 more)
 
-### Community 2 - "auth-store.ts"
-Cohesion: 0.09
-Nodes (21): plugins, expo-notifications, expo-router, expo-secure-store, LoginScreen(), styles, RegisterScreen(), styles (+13 more)
+### Community 2 - "useAuthStore"
+Cohesion: 0.21
+Nodes (10): LoginScreen(), RegisterScreen(), AuthGuard(), queryClient, HeallyScreen(), ChatBubbleProps, useAuthStore, HeallyStore (+2 more)
 
 ### Community 3 - "expo"
-Cohesion: 0.08
-Nodes (23): backgroundColor, backgroundImage, foregroundImage, monochromeImage, adaptiveIcon, predictiveBackGestureEnabled, reactCompiler, typedRoutes (+15 more)
+Cohesion: 0.06
+Nodes (27): backgroundColor, backgroundImage, foregroundImage, monochromeImage, adaptiveIcon, predictiveBackGestureEnabled, reactCompiler, typedRoutes (+19 more)
 
 ### Community 5 - "health-db.ts"
 Cohesion: 0.33
@@ -135,11 +133,11 @@ Nodes (10): bytesToHex(), getOrCreateDatabaseKey(), KEY_OPTIONS, openHealthDatab
 
 ### Community 6 - "scripts"
 Cohesion: 0.10
-Nodes (20): devDependencies, @playwright/test, @types/react, typescript, main, name, private, scripts (+12 more)
+Nodes (19): devDependencies, @playwright/test, @types/react, typescript, main, name, private, scripts (+11 more)
 
 ### Community 7 - "getHealthDatabase"
-Cohesion: 0.08
-Nodes (45): API_BASE_URL, API_ENDPOINTS, api, ApiError, refreshAccessToken(), refreshOnce(), request(), doctorService (+37 more)
+Cohesion: 0.07
+Nodes (51): API_BASE_URL, API_ENDPOINTS, api, ApiError, refreshAccessToken(), refreshOnce(), request(), LoginResponse (+43 more)
 
 ### Community 8 - "TypeScript Configuration"
 Cohesion: 0.15
@@ -148,14 +146,6 @@ Nodes (12): ./assets/*, expo-env.d.ts, expo/tsconfig.base, .expo/types/**/*.ts, 
 ### Community 10 - "Project Reset Script"
 Cohesion: 0.22
 Nodes (7): exampleDirPath, fs, oldDirs, path, readline, rl, root
-
-### Community 11 - "animated-icon.tsx"
-Cohesion: 0.29
-Nodes (4): glowKeyframe, keyframe, logoKeyframe, styles
-
-### Community 12 - "animated-icon.web.tsx"
-Cohesion: 0.29
-Nodes (4): glowKeyframe, keyframe, logoKeyframe, styles
 
 ### Community 13 - "App Icon Assets"
 Cohesion: 0.67
@@ -167,35 +157,35 @@ Nodes (34): A. Current architecture assessment, B. Problems and risks, Backend, 
 
 ### Community 19 - "(tabs)/index.tsx"
 Cohesion: 0.09
-Nodes (26): LOG_TITLES, LOG_TYPES, styles, SCHEDULE_TYPES, ScheduleScreen(), styles, ScheduleItemCard(), ScheduleItemCardProps (+18 more)
+Nodes (24): HomeScreen(), LOG_TITLES, LOG_TYPES, styles, ScheduleScreen(), ScheduleItemCardProps, dailyLogsService, scheduleRemindersService (+16 more)
 
 ### Community 34 - "types/index.ts"
-Cohesion: 0.12
-Nodes (25): ANSWER_OPTIONS, styles, evaluateScreening(), SCREENING_CHECK_LABELS, SCREENING_FACTOR_LABELS, SCREENING_INSTRUMENT_VERSION, SCREENING_QUESTIONS, ScreeningQuestion (+17 more)
+Cohesion: 0.11
+Nodes (29): ANSWER_OPTIONS, styles, MedicalRecordCardProps, VerifBadgeProps, evaluateScreening(), SCREENING_CHECK_LABELS, SCREENING_FACTOR_LABELS, SCREENING_INSTRUMENT_VERSION (+21 more)
 
 ### Community 39 - "dependencies"
 Cohesion: 0.18
-Nodes (11): expo-blur, expo-router, expo-sqlite, @expo/vector-icons, dependencies, expo-blur, expo-router, expo-sqlite (+3 more)
+Nodes (11): expo-blur, expo-crypto, expo-router, @expo/vector-icons, dependencies, expo-blur, expo-crypto, expo-router (+3 more)
 
 ## Knowledge Gaps
-- **209 isolated node(s):** `name`, `slug`, `version`, `orientation`, `icon` (+204 more)
+- **208 isolated node(s):** `name`, `slug`, `version`, `orientation`, `icon` (+203 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **49 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `plugins` connect `auth-store.ts` to `theme.ts`, `expo`?**
+- **Why does `plugins` connect `expo` to `explore.tsx`?**
   _High betweenness centrality (0.070) - this node is a cross-community bridge._
-- **Why does `expo` connect `expo` to `auth-store.ts`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
-- **Why does `expo-router` connect `auth-store.ts` to `ui/index.ts`, `theme.ts`, `types/index.ts`, `(tabs)/index.tsx`?**
+- **Why does `expo-router` connect `expo` to `theme.ts`, `explore.tsx`, `useAuthStore`, `types/index.ts`, `(tabs)/index.tsx`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **What connects `name`, `slug`, `version` to the rest of the system?**
-  _209 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `ui/index.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.055077452667814115 - nodes in this community are weakly interconnected._
+  _208 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `theme.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.14204545454545456 - nodes in this community are weakly interconnected._
-- **Should `auth-store.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.0928030303030303 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0652014652014652 - nodes in this community are weakly interconnected._
+- **Should `explore.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.07610993657505286 - nodes in this community are weakly interconnected._
+- **Should `expo` be split into smaller, more focused modules?**
+  _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+- **Should `scripts` be split into smaller, more focused modules?**
+  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
