@@ -1,8 +1,8 @@
 # Heally — PRD & Development Strategy
 
 > Shared product + engineering brief for **mobile-sehatica** and **backend-sehatica**.  
-> Notification selection details: see [`RDSA_Implementation_Plan.md`](./RDSA_Implementation_Plan.md).  
-> Copy / arms library: see [`Heally_Message_Templates.md`](./Heally_Message_Templates.md) (300 templates).
+> Notification selection details: see `[RDSA_Implementation_Plan.md](./RDSA_Implementation_Plan.md)`.  
+> Copy / arms library: see `[Heally_Message_Templates.md](./Heally_Message_Templates.md)` (300 templates).
 
 ---
 
@@ -22,14 +22,18 @@ Observe behaviour + health context
 
 ---
 
+
+
 ## 2. Goals
 
-| Goal | Success signal |
-|---|---|
+
+| Goal                                       | Success signal                                     |
+| ------------------------------------------ | -------------------------------------------------- |
 | Understand user condition beyond chat text | Behaviour features available for ranking & prompts |
-| Ask the right question at the right time | Higher reply / completion rate on Heally asks |
-| Dual-channel reach (App + WhatsApp) | User can answer from either channel; history syncs |
-| Safe & non-spammy | Consent, caps, quiet hours always beat RDSA |
+| Ask the right question at the right time   | Higher reply / completion rate on Heally asks      |
+| Dual-channel reach (App + WhatsApp)        | User can answer from either channel; history syncs |
+| Safe & non-spammy                          | Consent, caps, quiet hours always beat RDSA        |
+
 
 Non-goals (v1):
 
@@ -39,7 +43,11 @@ Non-goals (v1):
 
 ---
 
+
+
 ## 3. User & channels
+
+
 
 ### 3.1 Personas
 
@@ -47,17 +55,23 @@ Non-goals (v1):
 - **Doctor partner** — verifies risky Heally answers (existing verif flow)
 - **System (Heally)** — schedules asks, ranks templates, logs rewards
 
+
+
 ### 3.2 Channels
 
-| Channel | Use |
-|---|---|
-| **In-app Heally chat** | Full conversation, suggestions, verif badges |
-| **App push** | Soft pull back into chat when an ask is pending |
-| **WhatsApp** | Same ask when user prefers / is more active on WA |
+
+| Channel                | Use                                               |
+| ---------------------- | ------------------------------------------------- |
+| **In-app Heally chat** | Full conversation, suggestions, verif badges      |
+| **App push**           | Soft pull back into chat when an ask is pending   |
+| **WhatsApp**           | Same ask when user prefers / is more active on WA |
+
 
 Rule: one logical **Ask** can fan out to App and/or WA, but it shares one `ask_id` so replies merge into the same thread.
 
 ---
+
+
 
 ## 4. Behaviour understanding (must exist)
 
@@ -65,17 +79,21 @@ Heally must build a lightweight **User Behaviour Profile** so it “knows” whe
 
 ### 4.1 Signals to collect
 
-| Signal | Source | Purpose |
-|---|---|---|
-| **App open / foreground** | Mobile session lifecycle | Know when user is “present” in Sehatica |
-| **Heally screen active time** | Focus time on Heally tab / chat | Depth of engagement with AI |
-| **WhatsApp engagement** | WA webhook (inbound/outbound timestamps) | Prefer WA vs app for next ask |
-| **Session rhythm** | Aggregated open hours | Best time-of-day windows |
-| **Response latency** | Time from ask → first reply | Urgency & channel preference |
-| **Action completion** | Schedule toggle, record upload, verif request | Health-task adherence |
-| **Screen-time proxy (app-scoped)** | Foreground duration of Sehatica (and optionally Health-related deep links) | Fatigue / attention budget |
+
+| Signal                             | Source                                                                     | Purpose                                 |
+| ---------------------------------- | -------------------------------------------------------------------------- | --------------------------------------- |
+| **App open / foreground**          | Mobile session lifecycle                                                   | Know when user is “present” in Sehatica |
+| **Heally screen active time**      | Focus time on Heally tab / chat                                            | Depth of engagement with AI             |
+| **WhatsApp engagement**            | WA webhook (inbound/outbound timestamps)                                   | Prefer WA vs app for next ask           |
+| **Session rhythm**                 | Aggregated open hours                                                      | Best time-of-day windows                |
+| **Response latency**               | Time from ask → first reply                                                | Urgency & channel preference            |
+| **Action completion**              | Schedule toggle, record upload, verif request                              | Health-task adherence                   |
+| **Screen-time proxy (app-scoped)** | Foreground duration of Sehatica (and optionally Health-related deep links) | Fatigue / attention budget              |
+
 
 > **Privacy note:** Prefer **app-scoped** and **self-reported / consented** signals. Do not require OS-wide screen time APIs unless the user explicitly opts in and the store policy allows it. WhatsApp signals come only from the linked WA conversation with Heally bot.
+
+
 
 ### 4.2 Derived behavioural features
 
@@ -92,6 +110,8 @@ app_reply_rate            // replies / app asks
 adherence_rate            // schedule done / scheduled
 risk_flags[]              // e.g. missed meds, no records, pending verif
 ```
+
+
 
 ### 4.3 “Condition” for Heally (prompt + policy)
 
@@ -112,6 +132,8 @@ Prefer: short WA ask; escalate to app push if no reply in 2h.
 
 ---
 
+
+
 ## 5. Heally Ask — product unit
 
 An **Ask** is a Heally-initiated question that expects a user action/reply.
@@ -123,6 +145,8 @@ Examples:
 - “Upload hasil lab terakhir?”
 - “Mau saya buatkan jadwal olahraga minggu ini?”
 
+
+
 ### 5.1 Ask lifecycle
 
 ```text
@@ -131,21 +155,25 @@ draft → eligible → selected (RDSA) → delivered (app/wa)
       → reward recorded → stats updated
 ```
 
+
+
 ### 5.2 Delivery rule (required)
 
 When Heally needs a question:
 
-1. Create `ask` + choose **arm** (template) via RDSA eligibility + scoring  
-   → see [`RDSA_Implementation_Plan.md`](./RDSA_Implementation_Plan.md)
+1. Create `ask` + choose **arm** (template) via RDSA eligibility + scoring
+  → see `[RDSA_Implementation_Plan.md](./RDSA_Implementation_Plan.md)`
 2. Choose **channel** from behaviour (`channel_affinity`, silence, time window)
 3. Deliver:
-   - **App:** push + in-chat Heally bubble (same `ask_id`)
-   - **WhatsApp:** WA message with same `ask_id` / deep link when possible
+  - **App:** push + in-chat Heally bubble (same `ask_id`)
+  - **WhatsApp:** WA message with same `ask_id` / deep link when possible
 4. User reply on **either** channel lands in Heally history (sync)
 
 “Langsung masuk” means: notification / WA message opens or appends into the Heally conversation without the user hunting for it.
 
 ---
+
+
 
 ## 6. Notification strategy (RDSA)
 
@@ -153,16 +181,18 @@ RDSA is the **arm selector** for Heally asks — not the delivery pipe.
 
 ### 6.1 Mapping Sehatica concepts → RDSA
 
-| RDSA concept | Heally meaning |
-|---|---|
-| Arm | Ask template (+ optional language / intent) |
-| Eligible arms | Templates valid for this user state (sleeping arms filtered out) |
-| Recovering arms | Templates not over-sent recently (recency penalty) |
-| Reward = 1 | User replies **or** completes target action within window (e.g. 2h) |
-| Reward = 0 | No meaningful response in window |
-| SoftMax | Explore vs exploit across templates |
 
-Full math, tables, services, rollout: **`RDSA_Implementation_Plan.md`**.
+| RDSA concept    | Heally meaning                                                      |
+| --------------- | ------------------------------------------------------------------- |
+| Arm             | Ask template (+ optional language / intent)                         |
+| Eligible arms   | Templates valid for this user state (sleeping arms filtered out)    |
+| Recovering arms | Templates not over-sent recently (recency penalty)                  |
+| Reward = 1      | User replies **or** completes target action within window (e.g. 2h) |
+| Reward = 0      | No meaningful response in window                                    |
+| SoftMax         | Explore vs exploit across templates                                 |
+
+
+Full math, tables, services, rollout: `RDSA_Implementation_Plan.md`.
 
 ### 6.2 Heally-specific eligibility (before RDSA)
 
@@ -174,6 +204,8 @@ Always apply product guardrails first:
 - No duplicate open ask of same intent
 - Clinical safety: high-risk content stays `needsVerif` path, not casual nudges
 - Channel available (WA linked, push token present)
+
+
 
 ### 6.3 Channel selection (after arm pick)
 
@@ -190,16 +222,22 @@ Keep channel picker **simple and rule-based** in v1; do not explode RDSA arms by
 
 ### 6.4 Reward windows (Sehatica defaults)
 
-| Outcome | Reward |
-|---|---|
-| Reply to ask (app or WA) within 2h | 1 |
-| Completes referenced action (e.g. mark schedule done) within 2h | 1 |
-| Opens notification but no reply within 2h | 0 (or soft 0.25 later — stick to binary v1) |
-| No open / no reply | 0 |
+
+| Outcome                                                         | Reward                                      |
+| --------------------------------------------------------------- | ------------------------------------------- |
+| Reply to ask (app or WA) within 2h                              | 1                                           |
+| Completes referenced action (e.g. mark schedule done) within 2h | 1                                           |
+| Opens notification but no reply within 2h                       | 0 (or soft 0.25 later — stick to binary v1) |
+| No open / no reply                                              | 0                                           |
+
 
 ---
 
+
+
 ## 7. Data contracts (shared mobile ↔ backend)
+
+
 
 ### 7.1 Behaviour events (mobile → backend)
 
@@ -229,6 +267,8 @@ Batch when possible. Heartbeat optional; prefer start/stop focus events.
 }
 ```
 
+
+
 ### 7.3 Ask + notification event (backend)
 
 Align with RDSA `NotificationEvent`:
@@ -249,6 +289,8 @@ Align with RDSA `NotificationEvent`:
 }
 ```
 
+
+
 ### 7.4 Suggested tables (backend)
 
 Minimal set (extend existing schema rather than inventing parallel systems):
@@ -257,10 +299,12 @@ Minimal set (extend existing schema rather than inventing parallel systems):
 - `behaviour_profiles` (materialized features)
 - `heally_asks`
 - `notification_arms` / `notification_events` / `notification_arm_statistics`  
-  → as in RDSA plan
+→ as in RDSA plan
 - reuse `chat_messages` with `ask_id` / `fromWhatsApp` linkage
 
 ---
+
+
 
 ## 8. Architecture (cross-repo)
 
@@ -285,7 +329,11 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 
 ---
 
+
+
 ## 9. Development phases
+
+
 
 ### Phase 0 — Foundations (now → next)
 
@@ -294,18 +342,26 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 - [ ] Ask entity + deliver to **in-app chat** first
 - [ ] Wire push deep link → Heally
 
+
+
 ### Phase 1 — Dual channel
 
 - [ ] WhatsApp link + outbound ask + inbound sync into chat
 - [ ] Channel affinity from reply rates
 - [ ] Quiet hours + daily caps
 
+
+
 ### Phase 2 — RDSA online
 
 - [ ] Implement eligibility + `μ+` / `μ-` + recency + SoftMax  
-      (follow RDSA plan DoD checklist)
+  ```
+  (follow RDSA plan DoD checklist)
+  ```
 - [ ] Shadow mode vs current heuristic
 - [ ] Feature flag kill switch
+
+
 
 ### Phase 3 — Smarter condition
 
@@ -315,6 +371,8 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 
 ---
 
+
+
 ## 10. Mobile UX rules (Heally)
 
 - Template / suggestion prompts use **normal chat bubbles** (not empty chip rows)
@@ -323,6 +381,8 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 - WhatsApp tab remains status + sync explanation; primary conversation lives in Chat
 
 ---
+
+
 
 ## 11. Privacy, consent, safety
 
@@ -334,35 +394,51 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 
 ---
 
+
+
 ## 12. Metrics
 
-| Metric | Why |
-|---|---|
-| Ask reply rate (app / WA / overall) | Core RDSA reward proxy |
-| Time-to-reply | Channel & timing quality |
-| 7d retention / Heally opens | Habit |
-| Schedule adherence delta after asks | Health outcome proxy |
-| Opt-out / mute rate | Spam / trust |
-| Verif escalation rate | Safety load |
+
+| Metric                              | Why                      |
+| ----------------------------------- | ------------------------ |
+| Ask reply rate (app / WA / overall) | Core RDSA reward proxy   |
+| Time-to-reply                       | Channel & timing quality |
+| 7d retention / Heally opens         | Habit                    |
+| Schedule adherence delta after asks | Health outcome proxy     |
+| Opt-out / mute rate                 | Spam / trust             |
+| Verif escalation rate               | Safety load              |
+
 
 ---
 
+
+
 ## 13. Open decisions
 
-1. Exact reward window (2h vs same-day) for Sehatica habits  
-2. Whether channel is part of the arm key or a separate router (prefer **separate** in v1)  
-3. OS screen-time permission vs app-scoped dwell only (prefer **app-scoped** first)  
+1. Exact reward window (2h vs same-day) for Sehatica habits
+2. Whether channel is part of the arm key or a separate router (prefer **separate** in v1)
+3. OS screen-time permission vs app-scoped dwell only (prefer **app-scoped** first)
 4. WA provider (Meta Cloud API vs BSP)
 
 ---
 
+
+
 ## 14. References
 
-- [`RDSA_Implementation_Plan.md`](./RDSA_Implementation_Plan.md) — bandit / SoftMax / sleeping & recovering arms / rollout
+- `[RDSA_Implementation_Plan.md](./RDSA_Implementation_Plan.md)` — bandit / SoftMax / sleeping & recovering arms / rollout
 - Existing product surfaces: Heally chat, WhatsApp tab, schedule, records, doctor partners (QR)
 
 ---
 
+
+
 ## 15. One-liner for the team
 
 **Heally watches how the user lives in the app and WhatsApp, then uses RDSA to pick the next useful question and deliver it straight into chat — on the channel they’re most likely to answer.**
+
+---
+
+## Keamanan & privasi LLM
+
+Lihat [Heally_Privacy_Security.md](./Heally_Privacy_Security.md) untuk kebijakan de-identifikasi data sebelum dikirim ke provider LLM cloud.

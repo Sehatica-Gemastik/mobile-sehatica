@@ -1297,3 +1297,9 @@ This implementation plan is based primarily on the supplied RDSA implementation 
 The source also describes an offline experiment that reported a relative reward improvement after applying the bandit policy and recency penalty. That result should **not** be assumed to transfer directly to a different application; the new application needs its own offline and online evaluation.
 
 Source: supplied RDSA implementation article.
+
+---
+
+## Keamanan & privasi LLM
+
+Lihat [Heally_Privacy_Security.md](./Heally_Privacy_Security.md) untuk kebijakan de-identifikasi data sebelum dikirim ke provider LLM cloud.

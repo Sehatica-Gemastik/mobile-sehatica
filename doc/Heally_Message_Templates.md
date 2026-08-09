@@ -2655,3 +2655,9 @@ Salin ke seed DB / `notification_arms` bila perlu:
 3. RDSA memilih `arm_id` di antara eligible; channel router memilih push vs WA vs chat.
 4. Untuk chat suggestion, render `body` sebagai bubble biasa yang bisa di-tap (bukan chip kosong).
 5. Tambah locale `en` nanti sebagai arm terpisah (`arm_id` + `_en`) agar sesuai model RDSA notification+language.
+
+---
+
+## Keamanan & privasi LLM
+
+Lihat [Heally_Privacy_Security.md](./Heally_Privacy_Security.md) untuk kebijakan de-identifikasi data sebelum dikirim ke provider LLM cloud.
