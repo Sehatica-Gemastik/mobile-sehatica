@@ -69,6 +69,26 @@ export interface ChatMessage {
   verifDoctorName: string | null;
   verifNote: string | null;
   fromWhatsApp: boolean;
+  askId?: string | null;
+  thinkingSummary?: string | null;
+  thinkingDetail?: string | null;
+  createdAt: string;
+}
+
+export interface HeallyAsk {
+  id: string;
+  userId: number;
+  armId: string;
+  intent: string;
+  title: string;
+  body: string;
+  status: 'pending' | 'delivered' | 'replied' | 'expired' | 'dismissed';
+  channels: string[];
+  messageId: number | null;
+  reward: string | null;
+  deliveredAt: string | null;
+  repliedAt: string | null;
+  expiresAt: string | null;
   createdAt: string;
 }
 
@@ -106,7 +126,7 @@ export interface Doctor {
 // ── Dashboard ───────────────────────────────────────────────────────────────
 export interface DailyInsight {
   mainInsight: string;
-  tips: Array<{ emoji: string; text: string }>;
+  tips: Array<{ text: string }>;
 }
 
 export interface DashboardData {

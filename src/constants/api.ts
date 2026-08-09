@@ -41,6 +41,12 @@ export const API_ENDPOINTS = {
   heallyMessages: '/heally/messages',
   heallyChat: '/heally/chat',
   heallyVerifRequest: (messageId: number) => `/heally/verif-request/${messageId}`,
+  heallyPendingAsks: '/heally/asks/pending',
+  heallyTriggerAsk: '/heally/asks/trigger',
+  heallyAckAsk: (askId: string) => `/heally/asks/${askId}/ack`,
+  heallyLlmStatus: '/heally/llm-status',
+  heallyThinkingSteps: '/heally/thinking-steps',
+  heallySeedArms: '/heally/arms/seed',
 
   // Verifications
   verifRequests: '/verif',
