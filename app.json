@@ -39,6 +39,14 @@
           "cameraPermission": "Sehatica perlu kamera untuk scan QR dokter partner.",
           "barcodeScannerEnabled": true
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#16A34A",
+          "sounds": []
+        }
       ]
     ],
     "experiments": {
