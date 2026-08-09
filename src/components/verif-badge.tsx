@@ -42,7 +42,7 @@ export function VerifBadge({ status, doctorName, note }: VerifBadgeProps) {
   if (status === 'pending') {
     return (
       <View style={[styles.badge, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}>
-        <View style={styles.pendingDot} />
+        <Icon name="time-outline" size="sm" color={colors.amber} />
         <Text style={[styles.badgeText, { color: colors.amber }]}>
           Menunggu verifikasi dokter…
         </Text>
@@ -101,12 +101,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reviseNote: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular },
-  pendingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D97706',
-  },
   requestBtn: {
     flexDirection: 'row',
     alignItems: 'center',

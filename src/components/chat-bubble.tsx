@@ -6,40 +6,13 @@ import { ChatMessage } from '@/types';
 import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
 import { VerifBadge, RequestVerifButton } from './verif-badge';
 import { Icon } from '@/components/ui';
+import { ThinkingBlock } from './thinking-block';
+import { MarkdownContent } from './markdown-content';
 
 interface ChatBubbleProps {
   message: ChatMessage;
   onRequestVerif?: (messageId: number) => void;
   isVerifLoading?: boolean;
-}
-
-function RenderContent({ text, isUser }: { text: string; isUser: boolean }) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-  const textColor = isUser ? '#FFFFFF' : colors.text;
-
-  const lines = text.split('\n');
-  return (
-    <View style={{ gap: 2 }}>
-      {lines.map((line, i) => {
-        const parts = line.split(/(\*\*.*?\*\*)/g);
-        return (
-          <Text key={i} style={[styles.bubbleText, { color: textColor }]}>
-            {parts.map((part, j) => {
-              if (part.startsWith('**') && part.endsWith('**')) {
-                return (
-                  <Text key={j} style={{ fontFamily: Fonts.bold }}>
-                    {part.slice(2, -2)}
-                  </Text>
-                );
-              }
-              return part;
-            })}
-          </Text>
-        );
-      })}
-    </View>
-  );
 }
 
 export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubbleProps) {
@@ -61,6 +34,11 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const showRequestVerif =
+    !isUser && message.needsVerif && !message.verifStatus;
+  const showVerifBadge =
+    !isUser && message.needsVerif && message.verifStatus != null;
 
   return (
     <Animated.View
@@ -85,27 +63,33 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
               : [styles.bubbleAI, { backgroundColor: colors.backgroundCard, borderColor: colors.border }],
           ]}
         >
-          <RenderContent text={message.content} isUser={isUser} />
+          {isUser ? (
+            <Text style={[styles.plainText, { color: '#FFFFFF' }]}>{message.content}</Text>
+          ) : (
+            <MarkdownContent text={message.content} variant="assistant" />
+          )}
         </View>
 
-        {!isUser && message.needsVerif && (
-          <View>
-            {message.verifStatus === 'pending' ? (
-              <VerifBadge status="pending" />
-            ) : !message.verifStatus ? (
-              <RequestVerifButton
-                onPress={() => onRequestVerif?.(message.id)}
-                loading={isVerifLoading}
-              />
-            ) : null}
-            {message.verifStatus && message.verifStatus !== null ? (
-              <VerifBadge
-                status={message.verifStatus}
-                doctorName={message.verifDoctorName}
-                note={message.verifNote}
-              />
-            ) : null}
-          </View>
+        {!isUser && (message.thinkingSummary || message.thinkingDetail) && (
+          <ThinkingBlock
+            summary={message.thinkingSummary}
+            detail={message.thinkingDetail}
+          />
+        )}
+
+        {showVerifBadge && (
+          <VerifBadge
+            status={message.verifStatus!}
+            doctorName={message.verifDoctorName}
+            note={message.verifNote}
+          />
+        )}
+
+        {showRequestVerif && (
+          <RequestVerifButton
+            onPress={() => onRequestVerif?.(message.id)}
+            loading={isVerifLoading}
+          />
         )}
 
         <Text
@@ -145,7 +129,7 @@ const styles = StyleSheet.create({
   },
   bubbleUser: { borderBottomRightRadius: 4 },
   bubbleAI: { borderWidth: 1, borderBottomLeftRadius: 4 },
-  bubbleText: { fontSize: FontSize.sm, lineHeight: 20, fontFamily: Fonts.regular },
+  plainText: { fontSize: FontSize.sm, lineHeight: 20, fontFamily: Fonts.regular },
   timestamp: { fontSize: FontSize.xs, paddingHorizontal: 4, fontFamily: Fonts.regular },
   timestampUser: { textAlign: 'right' },
 });
