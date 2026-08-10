@@ -4,7 +4,7 @@ import {
   TextInputProps, Platform, useColorScheme,
 } from 'react-native';
 import {
-  Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset,
+  Colors, Fonts, FontSize, BorderRadius, nativeReset,
 } from '@/constants/theme';
 import { Icon, IconName } from './icon';
 

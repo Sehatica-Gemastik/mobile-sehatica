@@ -26,29 +26,38 @@ export const API_ENDPOINTS = {
   // Home
   dashboard: '/home/dashboard',
 
-  // Medical Records
+  // Medical Records (backend sync when used)
   records: '/records',
   recordOcr: '/records/ocr',
   recordVoice: '/records/voice',
 
-  // Schedules
+  // Schedules (backend sync when used)
   schedules: '/schedules',
   toggleSchedule: (id: number) => `/schedules/${id}/toggle`,
   deleteSchedule: (id: number) => `/schedules/${id}`,
   aiGenerateSchedule: '/schedules/ai-generate',
+  aiOcr: '/ai/ocr',
 
-  // Heally AI
+  // Heally AI (backend chat + RDSA)
   heallyMessages: '/heally/messages',
   heallyChat: '/heally/chat',
   heallyVerifRequest: (messageId: number) => `/heally/verif-request/${messageId}`,
+  heallyPendingAsks: '/heally/asks/pending',
+  heallyTriggerAsk: '/heally/asks/trigger',
+  heallyAckAsk: (askId: string) => `/heally/asks/${askId}/ack`,
+  heallyLlmStatus: '/heally/llm-status',
+  heallyThinkingSteps: '/heally/thinking-steps',
+  heallySeedArms: '/heally/arms/seed',
 
-  // Verifications
+  // Verifications (legacy backend verif)
   verifRequests: '/verif',
   verifApprove: (id: number) => `/verif/${id}/approve`,
   verifRevise: (id: number) => `/verif/${id}/revise`,
 
-  // Doctors
+  // Doctors & doctor review (Heally safety flow)
   doctors: '/doctors',
   doctorPartners: '/doctors/partners',
   doctorDetail: (id: number) => `/doctors/${id}`,
+  reviews: '/reviews',
+  myReviews: '/reviews/mine',
 } as const;

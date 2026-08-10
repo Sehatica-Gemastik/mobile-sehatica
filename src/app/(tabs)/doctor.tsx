@@ -4,9 +4,10 @@ import {
   RefreshControl, ActivityIndicator, useColorScheme, Alert,
 } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { Icon, IconName, ScreenHeader } from '@/components/ui';
+import { EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
 import { DoctorQrScanner } from '@/components/doctor-qr-scanner';
 import { Doctor } from '@/types';
 
@@ -16,7 +17,7 @@ export default function DoctorScreen() {
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  const { data: doctors = [], isLoading, isRefetching, refetch } = useQuery({
+  const { data: doctors = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['doctors'],
     queryFn: doctorService.getAll,
     placeholderData: [],
@@ -56,25 +57,24 @@ export default function DoctorScreen() {
     );
   }
 
-  const displayDoctors: Doctor[] = doctors.length > 0 ? doctors : [];
-  const partners = displayDoctors.filter((d) => d.isYours);
-  const others = displayDoctors.filter((d) => !d.isYours);
+  const partners = doctors.filter((d) => d.isYours);
+  const others = doctors.filter((d) => !d.isYours);
 
   const stats: { label: string; value: string; icon: IconName }[] = [
+    {
+      label: 'Verifikasi',
+      value: `${doctors.reduce((a, d) => a + d.verifiedCount, 0)}`,
+      icon: 'checkmark-circle-outline',
+    },
     {
       label: 'Partner',
       value: `${partners.length}`,
       icon: 'people-outline',
     },
     {
-      label: 'Dokter aktif',
-      value: `${displayDoctors.filter((d) => d.isAvailable).length}`,
-      icon: 'medkit-outline',
-    },
-    {
       label: 'Avg rating',
-      value: displayDoctors.length
-        ? `${(displayDoctors.reduce((a, d) => a + d.rating, 0) / displayDoctors.length).toFixed(1)}`
+      value: doctors.length
+        ? `${(doctors.reduce((a, d) => a + d.rating, 0) / doctors.length).toFixed(1)}`
         : '—',
       icon: 'star-outline',
     },
@@ -122,6 +122,23 @@ export default function DoctorScreen() {
         </View>
       </View>
 
+      <View style={[styles.doctorStats, { borderTopColor: colors.borderLight }]}>
+        <View style={styles.doctorStat}>
+          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.verifiedCount}</Text>
+          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Verifikasi</Text>
+        </View>
+        <View style={[styles.doctorStatDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.doctorStat}>
+          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.reviewCount}</Text>
+          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Ulasan</Text>
+        </View>
+        <View style={[styles.doctorStatDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.doctorStat}>
+          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.rating.toFixed(1)}</Text>
+          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Rating</Text>
+        </View>
+      </View>
+
       {doctor.isYours ? (
         <View style={[styles.partnerTag, { backgroundColor: colors.primaryLight }]}>
           <Icon name="checkmark-circle" size="sm" color={colors.primary} />
@@ -145,6 +162,7 @@ export default function DoctorScreen() {
         ]}
         activeOpacity={0.8}
         disabled={!doctor.isAvailable}
+        onPress={() => router.push('/(tabs)/heally')}
       >
         <Icon
           name="call-outline"
@@ -157,7 +175,7 @@ export default function DoctorScreen() {
             { color: doctor.isAvailable ? 'white' : colors.textMuted },
           ]}
         >
-          {doctor.isAvailable ? 'Konsultasi sekarang' : 'Sedang tidak tersedia'}
+          {doctor.isAvailable ? 'Buka Heally untuk review' : 'Sedang tidak tersedia'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -167,17 +185,7 @@ export default function DoctorScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Dokter partner"
-        subtitle={`${partners.length} partner · scan QR untuk menambah`}
-        right={
-          <TouchableOpacity
-            onPress={() => setScannerOpen(true)}
-            style={[styles.qrBtn, { backgroundColor: colors.primary }]}
-            activeOpacity={0.8}
-            accessibilityLabel="Scan QR dokter"
-          >
-            <Icon name="qr-code-outline" size="md" color={colors.onPrimary} />
-          </TouchableOpacity>
-        }
+        subtitle={`${partners.length} partner · ${doctors.filter((d) => d.isAvailable).length} tersedia`}
       >
         <TouchableOpacity
           onPress={() => setScannerOpen(true)}
@@ -201,6 +209,22 @@ export default function DoctorScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
+      ) : error ? (
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Daftar dokter tidak dapat dibuka"
+          description={error instanceof Error ? error.message : 'Periksa koneksi lalu coba lagi.'}
+          actionLabel="Coba lagi"
+          onAction={refetch}
+        />
+      ) : doctors.length === 0 ? (
+        <EmptyState
+          icon="medkit-outline"
+          title="Belum ada dokter tersedia"
+          description="Scan QR dokter untuk menambah partner pertama Anda."
+          actionLabel="Scan QR"
+          onAction={() => setScannerOpen(true)}
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.list}
@@ -255,7 +279,7 @@ export default function DoctorScreen() {
         visible={scannerOpen}
         onClose={() => setScannerOpen(false)}
         loading={addPartnerMutation.isPending}
-        onScan={(code) => addPartnerMutation.mutateAsync(code)}
+        onScan={(code) => { addPartnerMutation.mutate(code); }}
       />
     </View>
   );
@@ -263,10 +287,6 @@ export default function DoctorScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  qrBtn: {
-    width: 40, height: 40, borderRadius: BorderRadius.full,
-    alignItems: 'center', justifyContent: 'center',
-  },
   addRow: {
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.sm,
@@ -317,6 +337,11 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  doctorStats: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1 },
+  doctorStat: { flex: 1, alignItems: 'center', gap: 2 },
+  doctorStatValue: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  doctorStatLabel: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  doctorStatDivider: { width: 1, height: 28 },
   partnerTag: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     marginHorizontal: Spacing.base, alignSelf: 'flex-start',

@@ -2,9 +2,9 @@ import React from 'react';
 import {
   TouchableOpacity, Text, StyleSheet, ActivityIndicator,
   ViewStyle, TextStyle, Platform,
-} from 'react-native';
+ useColorScheme } from 'react-native';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
+
 import { Icon, IconName } from './icon';
 
 type Variant = 'primary' | 'secondary' | 'ghost';

@@ -59,14 +59,23 @@ export const Colors = {
 } as const;
 
 export type ThemeColors = typeof Colors.light;
+export type ThemeColor = keyof ThemeColors;
 
 export const Fonts = {
   regular: 'DMSans_400Regular',
   medium: 'DMSans_500Medium',
   bold: 'DMSans_700Bold',
+  mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 } as const;
 
 export const Spacing = {
+  half: 2,
+  one: 4,
+  two: 8,
+  three: 12,
+  four: 16,
+  five: 20,
+  six: 24,
   xs: 4,
   sm: 8,
   md: 12,

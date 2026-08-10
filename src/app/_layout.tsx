@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/auth-store';
+import { useHeallyAskSync } from '@/hooks/use-heally-ask-sync';
+import { useHeallyStore } from '@/store/heally-store';
 import {
   useFonts,
   DMSans_400Regular,
@@ -13,6 +15,7 @@ import {
 } from '@expo-google-fonts/dm-sans';
 
 if (Platform.OS === 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('../global.css');
 }
 
@@ -29,15 +32,27 @@ const queryClient = new QueryClient({
 });
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, loadStoredAuth, user } = useAuthStore();
   const router = useRouter();
   const segments = useSegments();
+  const previousUserId = useRef<number | null>(null);
+
+  useHeallyAskSync();
 
   useEffect(() => {
     loadStoredAuth().then(() => {
       SplashScreen.hideAsync();
     });
-  }, []);
+  }, [loadStoredAuth]);
+
+  useEffect(() => {
+    const userId = user?.id ?? null;
+    if (previousUserId.current !== userId) {
+      queryClient.clear();
+      useHeallyStore.getState().reset();
+      previousUserId.current = userId;
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -49,7 +64,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, segments]);
+  }, [isAuthenticated, isLoading, router, segments]);
 
   return <>{children}</>;
 }

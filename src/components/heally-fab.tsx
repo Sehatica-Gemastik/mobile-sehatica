@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, View, StyleSheet, Animated, useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Icon } from '@/components/ui';
@@ -10,8 +10,8 @@ interface HeallyFABProps {
 }
 
 export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps) {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(1));
+  const [scaleAnim] = useState(() => new Animated.Value(1));
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
@@ -27,7 +27,7 @@ export function HeallyFAB({ isOpen, onPress, hasUnread = false }: HeallyFABProps
       return () => pulse.stop();
     }
     pulseAnim.setValue(1);
-  }, [isOpen, hasUnread]);
+  }, [hasUnread, isOpen, pulseAnim]);
 
   const handlePress = () => {
     Animated.sequence([
