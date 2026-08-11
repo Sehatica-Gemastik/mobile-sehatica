@@ -9,9 +9,10 @@ import { Icon, scheduleIcons } from '@/components/ui';
 interface ScheduleItemCardProps {
   item: ScheduleItem;
   onToggle: () => void;
+  onLongPress?: () => void;
 }
 
-export function ScheduleItemCard({ item, onToggle }: ScheduleItemCardProps) {
+export function ScheduleItemCard({ item, onToggle, onLongPress }: ScheduleItemCardProps) {
   const cs = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[cs];
   const iconName = scheduleIcons[item.type] ?? scheduleIcons.other;
@@ -19,6 +20,8 @@ export function ScheduleItemCard({ item, onToggle }: ScheduleItemCardProps) {
   return (
     <TouchableOpacity
       onPress={onToggle}
+      onLongPress={onLongPress}
+      accessibilityHint={onLongPress ? 'Tekan lama untuk menghapus aktivitas' : undefined}
       activeOpacity={0.7}
       style={[
         styles.container,

@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   title: { fontSize: FontSize.md, fontFamily: Fonts.bold },
   sub: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   cameraWrap: { flex: 1, overflow: 'hidden', marginHorizontal: Spacing.lg, borderRadius: BorderRadius.lg },
-  overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 16 },
   frame: {
     width: 220,
     height: 220,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   loadingMask: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center',
     justifyContent: 'center',

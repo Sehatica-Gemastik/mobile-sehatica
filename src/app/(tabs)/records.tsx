@@ -10,8 +10,9 @@ import { recordsService } from '@/services/records.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { MedicalRecordCard } from '@/components/medical-record-card';
 import { Button, Chip, EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
+import { RecordType } from '@/types';
 
-const FILTERS = [
+const FILTERS: { id: 'all' | RecordType; label: string }[] = [
   { id: 'all', label: 'Semua' },
   { id: 'consultation', label: 'Konsultasi' },
   { id: 'image', label: 'Lab/Foto' },
@@ -32,7 +33,7 @@ export default function RecordsScreen() {
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
 
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | RecordType>('all');
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<AddType>('text');
   const [title, setTitle] = useState('');
@@ -40,7 +41,7 @@ export default function RecordsScreen() {
   const [voiceNote, setVoiceNote] = useState('');
   const [isOcrLoading, setIsOcrLoading] = useState(false);
 
-  const { data: records = [], isLoading, isRefetching, refetch } = useQuery({
+  const { data: records = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['records', activeFilter],
     queryFn: () => recordsService.getAll(activeFilter === 'all' ? undefined : activeFilter),
   });
@@ -49,21 +50,9 @@ export default function RecordsScreen() {
     mutationFn: recordsService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['records'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       resetAdd();
     },
     onError: (err: any) => Alert.alert('Gagal', err.message),
-  });
-
-  const ocrMutation = useMutation({
-    mutationFn: ({ base64, mime }: { base64: string; mime: string }) =>
-      recordsService.ocrImage(base64, mime),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['records'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      resetAdd();
-    },
-    onError: (err: any) => Alert.alert('OCR Gagal', err.message),
   });
 
   const voiceMutation = useMutation({
@@ -71,7 +60,6 @@ export default function RecordsScreen() {
       recordsService.createVoice(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['records'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       resetAdd();
     },
     onError: (err: any) => Alert.alert('Gagal', err.message),
@@ -96,14 +84,39 @@ export default function RecordsScreen() {
       quality: 0.7,
       base64: true,
     });
-    if (!result.canceled && result.assets[0].base64) {
+    if (!result.canceled) {
       setIsOcrLoading(true);
       try {
         const asset = result.assets[0];
-        await ocrMutation.mutateAsync({
-          base64: asset.base64!,
-          mime: asset.mimeType ?? 'image/jpeg',
+        const record = await recordsService.createImage({
+          fileUri: asset.uri,
+          title: asset.fileName ?? undefined,
+          mimeType: asset.mimeType ?? 'image/jpeg',
         });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['records'] }),
+        ]);
+        resetAdd();
+
+        if (!asset.base64) {
+          Alert.alert('Foto tersimpan', 'OCR belum dijalankan karena data gambar tidak tersedia.');
+          return;
+        }
+
+        try {
+          await recordsService.enrichImage(
+            record.id,
+            asset.base64,
+            asset.mimeType ?? 'image/jpeg'
+          );
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['records'] }),
+          ]);
+        } catch {
+          Alert.alert('Foto tersimpan', 'OCR sedang tidak tersedia. Rekam medis tetap tersimpan di perangkat.');
+        }
+      } catch {
+        Alert.alert('Gagal', 'Foto tidak dapat disimpan di perangkat.');
       } finally {
         setIsOcrLoading(false);
       }
@@ -169,7 +182,13 @@ export default function RecordsScreen() {
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
           }
         >
-          {records.length === 0 ? (
+          {error ? (
+            <EmptyState
+              icon="alert-circle-outline"
+              title="Penyimpanan lokal tidak tersedia"
+              description={error instanceof Error ? error.message : 'Coba buka kembali aplikasi.'}
+            />
+          ) : records.length === 0 ? (
             <EmptyState
               icon="clipboard-outline"
               title="Belum ada rekam medis"

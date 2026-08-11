@@ -12,7 +12,7 @@ interface AuthStore {
 
   setAuth: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
   clearAuth: () => Promise<void>;
-  setAccessToken: (token: string) => void;
+  setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   setUser: (user: User) => void;
   loadStoredAuth: () => Promise<boolean>;
 }
@@ -27,21 +27,21 @@ const STORAGE_KEYS = {
 const storage = {
   async setItem(key: string, value: string) {
     if (Platform.OS === 'web') {
-      try { localStorage.setItem(key, value); } catch (e) {}
+      try { localStorage.setItem(key, value); } catch {}
     } else {
       await SecureStore.setItemAsync(key, value);
     }
   },
   async getItem(key: string) {
     if (Platform.OS === 'web') {
-      try { return localStorage.getItem(key); } catch (e) { return null; }
+      try { return localStorage.getItem(key); } catch { return null; }
     } else {
       return await SecureStore.getItemAsync(key);
     }
   },
   async deleteItem(key: string) {
     if (Platform.OS === 'web') {
-      try { localStorage.removeItem(key); } catch (e) {}
+      try { localStorage.removeItem(key); } catch {}
     } else {
       await SecureStore.deleteItemAsync(key);
     }
@@ -82,7 +82,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
   },
 
-  setAccessToken: (token) => set({ accessToken: token }),
+  setTokens: async (accessToken, refreshToken) => {
+    await Promise.all([
+      storage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
+      storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
+    ]);
+    set({ accessToken, refreshToken });
+  },
 
   setUser: (user) => {
     set({ user });
