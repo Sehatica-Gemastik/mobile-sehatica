@@ -3,9 +3,13 @@ import { useAuthStore } from '@/store/auth-store';
 import {
   clearChatMessages,
   createChatMessage,
+  createChatSession,
+  getOrCreateDefaultSession,
   listChatMessages,
+  listChatMessagesBySession,
+  listChatSessions,
 } from '@/storage/chat-repository';
-import { ChatMessage, ChatSafetyLevel, HeallyAsk, VerifRequest } from '@/types';
+import { ChatMessage, ChatSafetyLevel, ChatSession, HeallyAsk, VerifRequest } from '@/types';
 import { api } from './api';
 
 export interface ChatResponse {
@@ -51,12 +55,20 @@ function mergeAssistantMessage(local: ChatMessage, remote: ChatMessage): ChatMes
 }
 
 export const heallyService = {
-  getMessages: () => listChatMessages(ownerUserId()),
+  getSessions: () => listChatSessions(ownerUserId()),
 
-  saveUserMessage: (message: string, askId?: string) =>
+  createSession: (title?: string) => createChatSession(ownerUserId(), title),
+
+  getDefaultSession: () => getOrCreateDefaultSession(ownerUserId()),
+
+  getMessages: (sessionId?: number) =>
+    sessionId ? listChatMessagesBySession(ownerUserId(), sessionId) : listChatMessages(ownerUserId()),
+
+  saveUserMessage: (message: string, askId?: string, sessionId?: number) =>
     createChatMessage(ownerUserId(), {
       role: 'user',
       content: message,
+      sessionId,
     }).then((saved) => (askId ? { ...saved, askId } : saved)),
 
   replyTo: async (userMessage: ChatMessage) => {
@@ -71,6 +83,7 @@ export const heallyService = {
       needsVerif: response.aiMessage.needsVerif,
       safetyLevel: inferSafetyLevel(response.aiMessage),
       safetyReasons: response.aiMessage.safetyReasons ?? [],
+      sessionId: userMessage.sessionId,
     });
 
     return mergeAssistantMessage(local, response.aiMessage);
@@ -79,7 +92,7 @@ export const heallyService = {
   sendMessage: (message: string, askId?: string) =>
     api.post<ChatResponse>(API_ENDPOINTS.heallyChat, { message, askId }),
 
-  clear: () => clearChatMessages(ownerUserId()),
+  clear: (sessionId?: number) => clearChatMessages(ownerUserId(), sessionId),
 
   requestVerif: (messageId: number) =>
     api.post<VerifRequest>(API_ENDPOINTS.heallyVerifRequest(messageId), {}),

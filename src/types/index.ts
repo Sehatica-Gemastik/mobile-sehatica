@@ -97,13 +97,26 @@ export interface ScreeningSession {
   completedAt: string;
 }
 
+// ── ChatGPT-Style Chat Room Session ──────────────────────────────────────────
+export interface ChatSession {
+  id: number;
+  sessionUuid: string;
+  userId: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Chat ────────────────────────────────────────────────────────────────────
 export type VerifStatus = 'pending' | 'approved' | 'revised';
 export type ChatSafetyLevel = 'general' | 'review' | 'urgent';
+export type ReviewScope = 'bubble' | 'session' | 'history';
+export type ReviewType = 'paid' | 'voluntary';
 
 export interface ChatMessage {
   id: number;
   userId: number;
+  sessionId?: number | null;
   role: 'user' | 'assistant';
   content: string;
   needsVerif: boolean;
@@ -112,6 +125,8 @@ export interface ChatMessage {
   verifStatus: VerifStatus | null;
   verifDoctorName: string | null;
   verifNote: string | null;
+  verifItemNote?: string | null;
+  verifSummaryNote?: string | null;
   fromWhatsApp: boolean;
   askId?: string | null;
   thinkingSummary?: string | null;
@@ -136,7 +151,7 @@ export interface HeallyAsk {
   createdAt: string;
 }
 
-// ── Verif Requests ──────────────────────────────────────────────────────────
+// ── Verif & Doctor Review Requests ───────────────────────────────────────────
 export interface VerifRequest {
   id: number;
   messageId: number | null;
@@ -151,12 +166,49 @@ export interface VerifRequest {
   reviewedAt: string | null;
 }
 
+export interface VoluntaryPendingRequest {
+  id: number;
+  doctorId: number;
+  doctorName: string;
+  specialty: string;
+  avatarInitials: string;
+  reviewScope: ReviewScope;
+  doctorNote: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface DoctorPermissionRequest {
+  id: number;
+  doctorId: number;
+  doctorName: string;
+  specialty: string;
+  avatarInitials: string;
+  reviewScope: ReviewScope;
+  qnaCount: number;
+  createdAt: string;
+}
+
+export interface ReviewItemSummary {
+  id: number;
+  clientMessageId: number;
+  doctorItemNote: string | null;
+  itemStatus: VerifStatus;
+}
+
 export interface ReviewSummary {
   id: number;
   clientMessageId: number;
   status: VerifStatus;
+  reviewScope?: ReviewScope;
+  reviewType?: ReviewType;
+  requestStatus?: string;
+  qnaCount?: number;
+  fee?: string;
   doctorName: string;
   doctorNote: string | null;
+  doctorSummaryNote?: string | null;
+  items?: ReviewItemSummary[];
   expiresAt: string;
   decidedAt: string | null;
 }
@@ -166,6 +218,7 @@ export interface Doctor {
   name: string;
   email?: string;
   specialty: string;
+  feePerQna?: string;
   rating: number;
   reviewCount: number;
   verifiedCount: number;
