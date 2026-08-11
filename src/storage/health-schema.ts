@@ -1,4 +1,4 @@
-export const HEALTH_DATABASE_VERSION = 5;
+export const HEALTH_DATABASE_VERSION = 6;
 
 export const MIGRATION_0_TO_1 = `
   CREATE TABLE medical_records (
@@ -102,4 +102,20 @@ export const MIGRATION_4_TO_5 = `
 
   CREATE INDEX screening_sessions_owner_completed_idx
     ON screening_sessions (owner_user_id, completed_at DESC);
+`;
+
+export const MIGRATION_5_TO_6 = `
+  CREATE TABLE heally_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_uuid TEXT NOT NULL UNIQUE,
+    owner_user_id INTEGER NOT NULL,
+    title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX heally_sessions_owner_created_idx
+    ON heally_sessions (owner_user_id, created_at DESC);
+
+  ALTER TABLE heally_messages ADD COLUMN session_id INTEGER REFERENCES heally_sessions(id) ON DELETE CASCADE;
 `;

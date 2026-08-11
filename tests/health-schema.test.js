@@ -7,6 +7,7 @@ import {
   MIGRATION_2_TO_3,
   MIGRATION_3_TO_4,
   MIGRATION_4_TO_5,
+  MIGRATION_5_TO_6,
 } from '../src/storage/health-schema';
 
 describe('local health schema', () => {
@@ -17,6 +18,7 @@ describe('local health schema', () => {
     database.exec(MIGRATION_2_TO_3);
     database.exec(MIGRATION_3_TO_4);
     database.exec(MIGRATION_4_TO_5);
+    database.exec(MIGRATION_5_TO_6);
     database.exec(`PRAGMA user_version = ${HEALTH_DATABASE_VERSION}`);
 
     database.query(`
@@ -29,7 +31,7 @@ describe('local health schema', () => {
       'SELECT owner_user_id, title FROM medical_records WHERE owner_user_id = ?'
     ).get(7);
     expect(record).toEqual({ owner_user_id: 7, title: 'Catatan tekanan darah' });
-    expect(database.query('PRAGMA user_version').get()).toEqual({ user_version: 5 });
+    expect(database.query('PRAGMA user_version').get()).toEqual({ user_version: 6 });
 
     database.query(
       'UPDATE medical_records SET file_data = ?, file_mime = ? WHERE owner_user_id = ?'
