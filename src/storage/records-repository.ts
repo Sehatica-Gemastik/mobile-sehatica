@@ -1,4 +1,5 @@
 import { MedicalRecord, RecordType } from '@/types';
+import type { VisionParseResult } from '@/types/medical-record-standard';
 import { getHealthDatabase } from './health-db';
 
 const RECORD_COLUMNS = `
@@ -35,12 +36,7 @@ export type CreateRecordInput = {
   isAiSummarized?: boolean;
 };
 
-export type OcrResult = {
-  extractedText: string;
-  title: string;
-  summary: string;
-  tags: string[];
-};
+export type OcrResult = VisionParseResult;
 
 function toRecord(row: RecordRow): MedicalRecord {
   let tags: string[] = [];
@@ -137,6 +133,10 @@ export async function applyOcrResult(
   id: number,
   result: OcrResult
 ): Promise<MedicalRecord> {
+  if (result.isMedicalDocument === false) {
+    throw new Error(result.rejectionReason ?? 'Gambar bukan dokumen medis');
+  }
+
   const title = typeof result.title === 'string' && result.title.trim()
     ? result.title.trim()
     : 'Dokumen medis';
@@ -145,16 +145,24 @@ export async function applyOcrResult(
   const tags = Array.isArray(result.tags)
     ? result.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 8)
     : [];
+  const recordType: RecordType =
+    result.recordType === 'consultation' || result.recordType === 'note' || result.recordType === 'image'
+      ? result.recordType
+      : 'image';
+
   const database = await getHealthDatabase();
   const update = await database.runAsync(
     `UPDATE medical_records
-      SET title = ?, content = ?, summary = ?, tags_json = ?,
-          is_ai_summarized = 1, updated_at = ?
+      SET type = ?, title = ?, content = ?, summary = ?, tags_json = ?,
+          doctor_name = ?, record_date = ?, is_ai_summarized = 1, updated_at = ?
       WHERE id = ? AND owner_user_id = ?`,
+    recordType,
     title,
     extractedText,
     summary,
     JSON.stringify(tags),
+    result.doctorName?.trim() || null,
+    result.recordDate ?? null,
     new Date().toISOString(),
     id,
     ownerUserId
@@ -164,6 +172,20 @@ export async function applyOcrResult(
   const record = await getRecord(ownerUserId, id);
   if (!record) throw new Error('Rekam medis tidak ditemukan');
   return record;
+}
+
+export async function getRecordFile(
+  ownerUserId: number,
+  id: number
+): Promise<{ data: Uint8Array; mime: string } | null> {
+  const database = await getHealthDatabase();
+  const row = await database.getFirstAsync<{ file_data: Uint8Array | null; file_mime: string | null }>(
+    `SELECT file_data, file_mime FROM medical_records WHERE id = ? AND owner_user_id = ?`,
+    id,
+    ownerUserId
+  );
+  if (!row?.file_data) return null;
+  return { data: row.file_data, mime: row.file_mime ?? 'image/jpeg' };
 }
 
 export async function deleteRecord(ownerUserId: number, id: number): Promise<boolean> {

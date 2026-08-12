@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { heallyService } from '@/services/heally.service';
+import { dailySyncService } from '@/services/daily-sync.service';
 import {
   ensureNotificationPermission,
   presentHeallyAskNotification,
@@ -30,6 +31,10 @@ export function useHeallyAskSync() {
       running.current = true;
       try {
         await ensureNotificationPermission();
+        const result = await dailySyncService.sync().catch(() => null);
+        if (result?.confirmPrompt?.sent) {
+          queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
+        }
         let pending = await heallyService.getPendingAsks();
 
         if (pending.length === 0) {

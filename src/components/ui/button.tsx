@@ -14,6 +14,7 @@ type Props = {
   onPress?: () => void;
   variant?: Variant;
   loading?: boolean;
+  loadingLabel?: string;
   disabled?: boolean;
   icon?: IconName;
   style?: ViewStyle;
@@ -21,7 +22,7 @@ type Props = {
 };
 
 export function Button({
-  label, onPress, variant = 'primary', loading, disabled, icon, style, fullWidth,
+  label, onPress, variant = 'primary', loading, loadingLabel = 'Menyimpan...', disabled, icon, style, fullWidth,
 }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
@@ -50,7 +51,10 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={fg} />
+        <>
+          <ActivityIndicator color={fg} />
+          <Text style={[styles.label, { color: fg }]}>{loadingLabel}</Text>
+        </>
       ) : (
         <>
           {icon ? <Icon name={icon} size="sm" color={fg} /> : null}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator, useColorScheme, Modal,
@@ -12,6 +12,7 @@ import { recordsService } from '@/services/records.service';
 import { dailyLogsService } from '@/services/daily-logs.service';
 import { screeningService } from '@/services/screening.service';
 import { scheduleRemindersService } from '@/services/schedule-reminders.service';
+import { dailySyncService } from '@/services/daily-sync.service';
 import { localDateKey } from '@/utils/local-date';
 import { useAuthStore } from '@/store/auth-store';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
@@ -40,6 +41,11 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const today = localDateKey();
+
+  useEffect(() => {
+    void dailySyncService.sync(today, { checkResume: false }).catch(() => null);
+  }, [today]);
+
   const [showLogModal, setShowLogModal] = useState(false);
   const [logType, setLogType] = useState<DailyLogType>('food');
   const [logTitle, setLogTitle] = useState(LOG_TITLES.food);
@@ -374,7 +380,12 @@ export default function HomeScreen() {
             <View style={styles.itemsList}>
               {recentRecords.length > 0 ? (
                 recentRecords.map((rec) => (
-                  <MedicalRecordCard key={rec.id} record={rec} compact />
+                  <MedicalRecordCard
+                    key={rec.id}
+                    record={rec}
+                    compact
+                    onPress={() => router.push(`/record/${rec.id}`)}
+                  />
                 ))
               ) : (
                 <View style={[styles.emptyCard, { borderColor: colors.border }]}>
@@ -442,15 +453,29 @@ export default function HomeScreen() {
             ) : null}
             <Button
               label="Simpan di perangkat"
-              onPress={() => createLogMutation.mutate({
-                type: logType,
-                title: logTitle,
-                quantity: logQuantity,
-                detail: logDetail,
-                logDate: today,
-                time: logTime,
-              })}
+              loadingLabel="Menyimpan catatan..."
+              onPress={() => {
+                const title = logTitle.trim();
+                const time = logTime.trim();
+                if (!title) {
+                  Alert.alert('Belum lengkap', 'Nama aktivitas wajib diisi.');
+                  return;
+                }
+                if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+                  Alert.alert('Format waktu salah', 'Gunakan format HH:MM, contoh 07:30.');
+                  return;
+                }
+                createLogMutation.mutate({
+                  type: logType,
+                  title,
+                  quantity: logQuantity.trim() || undefined,
+                  detail: logDetail.trim() || undefined,
+                  logDate: today,
+                  time,
+                });
+              }}
               loading={createLogMutation.isPending}
+              disabled={createLogMutation.isPending}
               fullWidth
             />
           </Pressable>
