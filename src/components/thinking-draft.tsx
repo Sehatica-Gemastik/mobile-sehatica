@@ -5,8 +5,8 @@ import { Icon } from '@/components/ui';
 
 const DEFAULT_STEPS = [
   'Memeriksa rekam medis & kondisi…',
+  'Membaca screening PTM & catatan hari ini…',
   'Menilai jadwal obat hari ini…',
-  'Membaca pola aktivitas & ask terakhir…',
   'Menyusun jawaban personal…',
 ];
 

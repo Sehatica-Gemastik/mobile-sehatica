@@ -85,6 +85,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="record/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
           </Stack>
         </AuthGuard>
       </SafeAreaProvider>

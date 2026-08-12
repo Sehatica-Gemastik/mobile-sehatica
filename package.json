@@ -16,6 +16,7 @@
     "expo-crypto": "~57.0.1",
     "expo-dev-client": "~57.0.10",
     "expo-device": "~57.0.1",
+    "expo-document-picker": "^57.0.1",
     "expo-file-system": "~57.0.2",
     "expo-font": "^57.0.1",
     "expo-glass-effect": "~57.0.1",
@@ -57,8 +58,8 @@
     "start": "bun node_modules/expo/bin/cli start",
     "start:dev-client": "bun node_modules/expo/bin/cli start --dev-client",
     "reset-project": "bun ./scripts/reset-project.js",
-    "android": "bun node_modules/expo/bin/cli start --android",
-    "android:device": "bun node_modules/expo/bin/cli run:android --device",
+    "android": "bash scripts/prepare-android.sh && bun node_modules/expo/bin/cli run:android",
+    "android:device": "bash scripts/prepare-android.sh && bun node_modules/expo/bin/cli run:android --device",
     "ios": "bun node_modules/expo/bin/cli start --ios",
     "web": "bun node_modules/expo/bin/cli start --web",
     "lint": "bun node_modules/eslint/bin/eslint.js ."

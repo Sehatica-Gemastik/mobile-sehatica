@@ -1,15 +1,5 @@
 import { API_ENDPOINTS } from '@/constants/api';
-import { useAuthStore } from '@/store/auth-store';
-import {
-  clearChatMessages,
-  createChatMessage,
-  createChatSession,
-  getOrCreateDefaultSession,
-  listChatMessages,
-  listChatMessagesBySession,
-  listChatSessions,
-} from '@/storage/chat-repository';
-import { ChatMessage, ChatSafetyLevel, ChatSession, HeallyAsk, VerifRequest } from '@/types';
+import { ChatMessage, ChatSafetyLevel, HeallyAsk, VerifRequest } from '@/types';
 import { api } from './api';
 
 export interface ChatResponse {
@@ -27,72 +17,41 @@ export interface TriggerAskResponse {
   notification?: { title: string; body: string; askId: string };
 }
 
-function ownerUserId(): number {
-  const id = useAuthStore.getState().user?.id;
-  if (!id) throw new Error('Sesi pengguna tidak tersedia');
-  return id;
-}
-
 function inferSafetyLevel(message: Partial<ChatMessage>): ChatSafetyLevel {
   if (message.safetyLevel) return message.safetyLevel;
   if (message.needsVerif) return 'review';
   return 'general';
 }
 
-function mergeAssistantMessage(local: ChatMessage, remote: ChatMessage): ChatMessage {
+function normalizeChatMessage(message: ChatMessage): ChatMessage {
   return {
-    ...local,
-    safetyLevel: inferSafetyLevel(remote),
-    safetyReasons: remote.safetyReasons ?? local.safetyReasons ?? [],
-    needsVerif: remote.needsVerif ?? local.needsVerif,
-    thinkingSummary: remote.thinkingSummary ?? null,
-    thinkingDetail: remote.thinkingDetail ?? null,
-    askId: remote.askId ?? null,
-    verifStatus: remote.verifStatus ?? local.verifStatus,
-    verifDoctorName: remote.verifDoctorName ?? local.verifDoctorName,
-    verifNote: remote.verifNote ?? local.verifNote,
+    ...message,
+    safetyLevel: inferSafetyLevel(message),
+    safetyReasons: message.safetyReasons ?? [],
+    createdAt:
+      typeof message.createdAt === 'string'
+        ? message.createdAt
+        : new Date(message.createdAt as unknown as string).toISOString(),
   };
 }
 
 export const heallyService = {
-  getSessions: () => listChatSessions(ownerUserId()),
-
-  createSession: (title?: string) => createChatSession(ownerUserId(), title),
-
-  getDefaultSession: () => getOrCreateDefaultSession(ownerUserId()),
-
-  getMessages: (sessionId?: number) =>
-    sessionId ? listChatMessagesBySession(ownerUserId(), sessionId) : listChatMessages(ownerUserId()),
-
-  saveUserMessage: (message: string, askId?: string, sessionId?: number) =>
-    createChatMessage(ownerUserId(), {
-      role: 'user',
-      content: message,
-      sessionId,
-    }).then((saved) => (askId ? { ...saved, askId } : saved)),
-
-  replyTo: async (userMessage: ChatMessage) => {
-    const response = await api.post<ChatResponse>(API_ENDPOINTS.heallyChat, {
-      message: userMessage.content,
-      askId: userMessage.askId ?? undefined,
-    });
-
-    const local = await createChatMessage(ownerUserId(), {
-      role: 'assistant',
-      content: response.aiMessage.content,
-      needsVerif: response.aiMessage.needsVerif,
-      safetyLevel: inferSafetyLevel(response.aiMessage),
-      safetyReasons: response.aiMessage.safetyReasons ?? [],
-      sessionId: userMessage.sessionId,
-    });
-
-    return mergeAssistantMessage(local, response.aiMessage);
+  getMessages: async () => {
+    const rows = await api.get<ChatMessage[]>(API_ENDPOINTS.heallyMessages);
+    return rows.map(normalizeChatMessage);
   },
 
-  sendMessage: (message: string, askId?: string) =>
-    api.post<ChatResponse>(API_ENDPOINTS.heallyChat, { message, askId }),
-
-  clear: (sessionId?: number) => clearChatMessages(ownerUserId(), sessionId),
+  sendMessage: async (message: string, askId?: string) => {
+    const response = await api.post<ChatResponse>(API_ENDPOINTS.heallyChat, {
+      message,
+      askId,
+    });
+    return {
+      ...response,
+      userMessage: normalizeChatMessage(response.userMessage),
+      aiMessage: normalizeChatMessage(response.aiMessage),
+    };
+  },
 
   requestVerif: (messageId: number) =>
     api.post<VerifRequest>(API_ENDPOINTS.heallyVerifRequest(messageId), {}),
@@ -105,4 +64,10 @@ export const heallyService = {
 
   ackAsk: (askId: string) =>
     api.post<HeallyAsk>(API_ENDPOINTS.heallyAckAsk(askId), {}),
+
+  getThinkingSteps: (context?: 'schedule' | 'resume' | 'default') => {
+    const query =
+      context && context !== 'default' ? `?context=${context}` : '';
+    return api.get<{ steps: string[] }>(`${API_ENDPOINTS.heallyThinkingSteps}${query}`);
+  },
 };

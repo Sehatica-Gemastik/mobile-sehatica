@@ -44,6 +44,7 @@ export default function ScreeningScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['screening'] });
       setAnswers({});
+      Alert.alert('Tersimpan', 'Screening risiko PTM hari ini sudah disimpan.');
     },
     onError: (mutationError: Error) => Alert.alert('Screening gagal disimpan', mutationError.message),
   });
@@ -86,7 +87,7 @@ export default function ScreeningScreen() {
           <View style={styles.noticeText}>
             <Text style={[styles.noticeTitle, { color: colors.text }]}>Privat dan tersimpan lokal</Text>
             <Text style={[styles.noticeBody, { color: colors.textSecondary }]}>
-              Jawaban disimpan terenkripsi di perangkat ini dan tidak dikirim ke AI atau server.
+              Jawaban disimpan di perangkat ini dan disinkronkan ke server untuk Heally & jadwal harian.
             </Text>
           </View>
         </View>
@@ -200,8 +201,9 @@ export default function ScreeningScreen() {
 
         <Button
           label={latest ? 'Simpan hasil baru' : 'Lihat dan simpan hasil'}
+          loadingLabel="Menyimpan jawaban..."
           onPress={complete}
-          disabled={!canComplete}
+          disabled={!canComplete || completeMutation.isPending}
           loading={completeMutation.isPending}
           fullWidth
         />

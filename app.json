@@ -50,12 +50,7 @@
           "sounds": []
         }
       ],
-      [
-        "expo-sqlite",
-        {
-          "useSQLCipher": true
-        }
-      ],
+      "expo-sqlite",
       "expo-image"
     ],
     "experiments": {

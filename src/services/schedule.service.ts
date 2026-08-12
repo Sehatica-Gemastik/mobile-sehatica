@@ -1,5 +1,7 @@
 import { API_ENDPOINTS } from '@/constants/api';
 import { useAuthStore } from '@/store/auth-store';
+import { SCREENING_FACTOR_LABELS } from '@/features/screening/screening-rules';
+import { listDailyLogs } from '@/storage/daily-logs-repository';
 import { listRecords } from '@/storage/records-repository';
 import {
   createSchedule,
@@ -9,8 +11,10 @@ import {
   toggleSchedule,
   type CreateScheduleInput,
 } from '@/storage/schedules-repository';
-import { ScheduleType } from '@/types';
+import { getLatestScreening } from '@/storage/screening-repository';
+import { ScheduleType, ScreeningQuestionId } from '@/types';
 import { localDateKey } from '@/utils/local-date';
+import { dailySyncService } from './daily-sync.service';
 import { api } from './api';
 
 type GeneratedItem = {
@@ -44,13 +48,31 @@ export const scheduleService = {
 
   aiGenerate: async (date = localDateKey()) => {
     const owner = ownerUserId();
-    const [records, schedules] = await Promise.all([
+    const [records, schedules, logs, screening] = await Promise.all([
       listRecords(owner),
       listSchedules(owner, date),
+      listDailyLogs(owner, date),
+      getLatestScreening(owner),
     ]);
-    const healthContext = records.slice(0, 5).map((record) =>
-      `${record.title}: ${record.summary ?? record.content ?? 'Tanpa detail'}`
-    ).join('\n').slice(0, 6_000);
+
+    const screeningToday =
+      screening != null && screening.completedAt.slice(0, 10) === date;
+
+    const healthContext = records
+      .slice(0, 5)
+      .map((record) => `${record.title}: ${record.summary ?? record.content ?? 'Tanpa detail'}`)
+      .join('\n')
+      .slice(0, 6_000);
+
+    const screeningSummary = screeningToday
+      ? `Faktor PTM: ${screening.factors.map((id) => SCREENING_FACTOR_LABELS[id as ScreeningQuestionId] ?? id).join(', ') || 'tidak ada'}`
+      : 'Screening PTM hari ini belum diisi.';
+
+    const dailyLogsSummary =
+      logs.length > 0
+        ? logs.map((log) => `- ${log.time} ${log.title}${log.quantity ? ` (${log.quantity})` : ''}`).join('\n')
+        : 'Belum ada catatan harian.';
+
     const explicitMedicationInstructions = schedules
       .filter((item) => item.type === 'pill' && !item.isAiGenerated)
       .map(({ label, detail, time }) => ({ label, detail, time }));
@@ -59,8 +81,11 @@ export const scheduleService = {
       date,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       healthContext,
+      screeningSummary,
+      dailyLogsSummary,
       explicitMedicationInstructions,
     });
+
     if (
       !generated ||
       !Array.isArray(generated.items) ||
@@ -69,7 +94,10 @@ export const scheduleService = {
     ) {
       throw new Error('Respons jadwal AI tidak valid');
     }
+
     const items = await replaceAiSchedules(owner, date, generated.items);
+    dailySyncService.sync(date, { checkResume: false }).catch(() => null);
+
     return {
       items,
       warnings: generated.warnings.filter((warning): warning is string => typeof warning === 'string'),

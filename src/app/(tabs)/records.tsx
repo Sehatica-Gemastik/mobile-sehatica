@@ -6,10 +6,24 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { recordsService } from '@/services/records.service';
+import * as DocumentPicker from 'expo-document-picker';
+import { router } from 'expo-router';
+import { useAuthStore } from '@/store/auth-store';
+import { recordsService, NotMedicalDocumentError } from '@/services/records.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { MedicalRecordCard } from '@/components/medical-record-card';
+import {
+  DocumentProcessingOverlay,
+  type DocumentProcessingKind,
+  type DocumentProcessingPhase,
+  type DocumentProcessingState,
+} from '@/components/document-processing-overlay';
 import { Button, Chip, EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
+import { resolveDocumentMime, isSupportedMedicalFileMime } from '@/utils/document-mime';
+import { medicalStorageBlockedReason } from '@/utils/runtime-environment';
+import { showUserMessage } from '@/utils/user-message';
+import { bytesFromBase64, readDocumentFile } from '@/utils/read-document-file';
+import { delay, waitForUi } from '@/utils/wait-for-ui';
 import { RecordType } from '@/types';
 
 const FILTERS: { id: 'all' | RecordType; label: string }[] = [
@@ -24,7 +38,7 @@ type AddType = 'text' | 'image' | 'voice';
 
 const ADD_TYPES: { type: AddType; icon: IconName; label: string }[] = [
   { type: 'text', icon: 'document-text-outline', label: 'Teks' },
-  { type: 'image', icon: 'camera-outline', label: 'Foto/OCR' },
+  { type: 'image', icon: 'camera-outline', label: 'Dokumen' },
   { type: 'voice', icon: 'mic-outline', label: 'Suara' },
 ];
 
@@ -39,7 +53,11 @@ export default function RecordsScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [voiceNote, setVoiceNote] = useState('');
-  const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [processing, setProcessing] = useState<DocumentProcessingState | null>(null);
+
+  const setPhase = (phase: DocumentProcessingPhase) => {
+    setProcessing((prev) => (prev ? { ...prev, phase } : prev));
+  };
 
   const { data: records = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['records', activeFilter],
@@ -73,54 +91,160 @@ export default function RecordsScreen() {
     setAddType('text');
   };
 
-  const handlePickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Izin Ditolak', 'Akses galeri diperlukan untuk upload foto');
+  const storageBlocked = medicalStorageBlockedReason();
+
+  const ensureDocumentUploadAllowed = (): boolean => {
+    if (storageBlocked) {
+      showUserMessage('Upload tidak tersedia', storageBlocked);
+      return false;
+    }
+    if (!useAuthStore.getState().user?.id) {
+      showUserMessage('Login diperlukan', 'Silakan login dulu sebelum upload rekam medis.');
+      return false;
+    }
+    return true;
+  };
+
+  const openPickerWithOverlay = async (kind: DocumentProcessingKind) => {
+    setProcessing({ phase: 'saving', kind, fileName: 'Membuka pemilih file…' });
+    setShowAdd(false);
+    await waitForUi(120);
+    await delay(Platform.OS === 'android' ? 450 : 220);
+  };
+
+  const processDocumentFile = async (params: {
+    uri: string;
+    mimeType: string;
+    name?: string;
+    base64?: string;
+  }) => {
+    const mimeType = resolveDocumentMime(params.name, params.mimeType);
+    if (!isSupportedMedicalFileMime(mimeType)) {
+      showUserMessage('Format tidak didukung', 'Unggah PDF atau foto (JPG/PNG).');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-      base64: true,
-    });
-    if (!result.canceled) {
-      setIsOcrLoading(true);
+
+    const kind: DocumentProcessingKind = mimeType.includes('pdf') ? 'pdf' : 'photo';
+    setProcessing({ phase: 'saving', kind, fileName: params.name ?? (kind === 'pdf' ? 'Dokumen PDF' : 'Foto dokumen') });
+    await waitForUi(120);
+
+    let recordId: number | null = null;
+    try {
+      setPhase('reading');
+      const { bytes, base64 } = params.base64
+        ? { bytes: bytesFromBase64(params.base64), base64: params.base64 }
+        : await readDocumentFile(params.uri);
+
+      setPhase('saving');
+      const record = await recordsService.createImage({
+        fileData: bytes,
+        title: params.name,
+        mimeType,
+        cacheUri: params.uri,
+      });
+      recordId = record.id;
+      await queryClient.invalidateQueries({ queryKey: ['records'] });
+
+      setPhase('parsing');
       try {
-        const asset = result.assets[0];
-        const record = await recordsService.createImage({
-          fileUri: asset.uri,
-          title: asset.fileName ?? undefined,
-          mimeType: asset.mimeType ?? 'image/jpeg',
-        });
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['records'] }),
-        ]);
-        resetAdd();
-
-        if (!asset.base64) {
-          Alert.alert('Foto tersimpan', 'OCR belum dijalankan karena data gambar tidak tersedia.');
-          return;
+        await recordsService.enrichImage(record.id, base64, mimeType);
+        setPhase('finishing');
+        await queryClient.invalidateQueries({ queryKey: ['records'] });
+        await delay(500);
+        setProcessing(null);
+        showUserMessage('Berhasil', 'Dokumen medis berhasil diparse dan distandarkan.');
+      } catch (err) {
+        setProcessing(null);
+        if (err instanceof NotMedicalDocumentError) {
+          await recordsService.delete(record.id);
+          await queryClient.invalidateQueries({ queryKey: ['records'] });
+          showUserMessage('Bukan dokumen medis', err.message);
+        } else {
+          const detail = err instanceof Error ? err.message : 'Parsing gagal';
+          showUserMessage('Dokumen tersimpan', `File ada di perangkat, tapi parsing gagal: ${detail}`);
         }
-
-        try {
-          await recordsService.enrichImage(
-            record.id,
-            asset.base64,
-            asset.mimeType ?? 'image/jpeg'
-          );
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['records'] }),
-          ]);
-        } catch {
-          Alert.alert('Foto tersimpan', 'OCR sedang tidak tersedia. Rekam medis tetap tersimpan di perangkat.');
-        }
-      } catch {
-        Alert.alert('Gagal', 'Foto tidak dapat disimpan di perangkat.');
-      } finally {
-        setIsOcrLoading(false);
       }
+    } catch (err) {
+      setProcessing(null);
+      if (recordId) await recordsService.delete(recordId).catch(() => null);
+      showUserMessage('Gagal', err instanceof Error ? err.message : 'Dokumen tidak dapat disimpan.');
     }
+  };
+
+  const handlePickPdf = async () => {
+    if (!ensureDocumentUploadAllowed()) return;
+    await openPickerWithOverlay('pdf');
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets[0]) {
+        setProcessing(null);
+        return;
+      }
+      const asset = result.assets[0];
+      await processDocumentFile({
+        uri: asset.uri,
+        mimeType: resolveDocumentMime(asset.name, asset.mimeType ?? 'application/pdf'),
+        name: asset.name,
+      });
+    } catch (err) {
+      setProcessing(null);
+      showUserMessage('Gagal', err instanceof Error ? err.message : 'Pemilih PDF gagal');
+    }
+  };
+
+  const handlePickImageFile = async () => {
+    if (!ensureDocumentUploadAllowed()) return;
+    await openPickerWithOverlay('photo');
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'image/*',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets[0]) {
+        setProcessing(null);
+        return;
+      }
+      const asset = result.assets[0];
+      const mimeType = resolveDocumentMime(asset.name, asset.mimeType);
+      if (!mimeType.startsWith('image/')) {
+        setProcessing(null);
+        showUserMessage('Format tidak didukung', 'Pilih file foto (JPG/PNG).');
+        return;
+      }
+      await processDocumentFile({
+        uri: asset.uri,
+        mimeType,
+        name: asset.name,
+      });
+    } catch (err) {
+      setProcessing(null);
+      showUserMessage('Gagal', err instanceof Error ? err.message : 'Pemilih foto gagal');
+    }
+  };
+
+  const handlePickCamera = async () => {
+    if (!ensureDocumentUploadAllowed()) return;
+    setShowAdd(false);
+    await waitForUi(80);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      showUserMessage('Izin Ditolak', 'Akses kamera diperlukan');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.75, base64: true });
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    await processDocumentFile({
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? 'image/jpeg',
+      name: asset.fileName ?? undefined,
+      base64: asset.base64 ?? undefined,
+    });
   };
 
   const handleSave = () => {
@@ -139,7 +263,8 @@ export default function RecordsScreen() {
     }
   };
 
-  const isLoaderShowing = createMutation.isPending || voiceMutation.isPending || isOcrLoading;
+  const isProcessing = processing !== null;
+  const isLoaderShowing = createMutation.isPending || voiceMutation.isPending || isProcessing;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -149,7 +274,8 @@ export default function RecordsScreen() {
         right={
           <TouchableOpacity
             onPress={() => setShowAdd(true)}
-            style={[styles.addBtn, { backgroundColor: colors.primary }]}
+            disabled={isProcessing}
+            style={[styles.addBtn, { backgroundColor: colors.primary, opacity: isProcessing ? 0.6 : 1 }]}
             activeOpacity={0.8}
           >
             <Icon name="add" size="md" color={colors.onPrimary} />
@@ -169,6 +295,13 @@ export default function RecordsScreen() {
           </View>
         </ScrollView>
       </ScreenHeader>
+
+      {storageBlocked ? (
+        <View style={[styles.storageBanner, { backgroundColor: colors.amberLight, borderColor: colors.amber }]}>
+          <Icon name="warning-outline" size="sm" color={colors.amber} />
+          <Text style={[styles.storageBannerText, { color: colors.textSecondary }]}>{storageBlocked}</Text>
+        </View>
+      ) : null}
 
       {isLoading ? (
         <View style={styles.center}>
@@ -195,7 +328,13 @@ export default function RecordsScreen() {
               description="Tap tombol + untuk menambahkan rekam medis Anda"
             />
           ) : (
-            records.map((rec) => <MedicalRecordCard key={rec.id} record={rec} />)
+            records.map((rec) => (
+              <MedicalRecordCard
+                key={rec.id}
+                record={rec}
+                onPress={() => router.push(`/record/${rec.id}`)}
+              />
+            ))
           )}
         </ScrollView>
       )}
@@ -266,27 +405,36 @@ export default function RecordsScreen() {
             )}
 
             {addType === 'image' && (
-              <TouchableOpacity
-                onPress={handlePickImage}
-                disabled={isOcrLoading}
-                style={[styles.uploadZone, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}
-                activeOpacity={0.7}
-              >
-                {isOcrLoading ? (
+              <View style={styles.formGroup}>
+                <TouchableOpacity
+                  onPress={handlePickPdf}
+                  disabled={isProcessing}
+                  style={[styles.uploadZone, { borderColor: colors.border, backgroundColor: colors.backgroundElement, opacity: isProcessing ? 0.6 : 1 }]}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.uploadContent}>
-                    <ActivityIndicator color={colors.primary} />
-                    <Text style={[styles.uploadText, { color: colors.primary }]}>Memproses OCR...</Text>
-                  </View>
-                ) : (
-                  <View style={styles.uploadContent}>
-                    <Icon name="cloud-upload-outline" size="lg" color={colors.textMuted} />
-                    <Text style={[styles.uploadText, { color: colors.text }]}>Pilih foto dokumen medis</Text>
+                    <Icon name="document-text-outline" size="lg" color={colors.textMuted} />
+                    <Text style={[styles.uploadText, { color: colors.text }]}>Upload PDF rekam medis</Text>
                     <Text style={[styles.uploadHint, { color: colors.textMuted }]}>
-                      AI akan membaca dan meringkas dokumen Anda
+                      Ekstrak teks PDF → parse standar via LLM
                     </Text>
                   </View>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+                <Button
+                  label="Pilih foto (galeri/file)"
+                  variant="secondary"
+                  onPress={handlePickImageFile}
+                  disabled={isProcessing}
+                  fullWidth
+                />
+                <Button
+                  label="Ambil foto kamera"
+                  variant="secondary"
+                  onPress={handlePickCamera}
+                  disabled={isProcessing}
+                  fullWidth
+                />
+              </View>
             )}
 
             {addType === 'voice' && (
@@ -321,6 +469,8 @@ export default function RecordsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <DocumentProcessingOverlay state={processing} />
     </View>
   );
 }
@@ -370,4 +520,15 @@ const styles = StyleSheet.create({
   uploadContent: { alignItems: 'center', gap: 8 },
   uploadText: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
   uploadHint: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
+  storageBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    padding: Spacing.base,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  storageBannerText: { flex: 1, fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular },
 });

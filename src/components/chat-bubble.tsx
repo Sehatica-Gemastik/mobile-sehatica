@@ -6,16 +6,25 @@ import { ChatMessage } from '@/types';
 import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
 import { VerifBadge, RequestVerifButton } from './verif-badge';
 import { Icon } from '@/components/ui';
-import { ThinkingBlock } from './thinking-block';
 import { MarkdownContent } from './markdown-content';
+import { HeallyChatActions } from './heally-chat-actions';
+import { parseHeallyCtas, HeallyCtaAction } from '@/utils/heally-cta';
 
 interface ChatBubbleProps {
   message: ChatMessage;
   onRequestVerif?: (message: ChatMessage) => void;
   isVerifLoading?: boolean;
+  onHeallyAction?: (action: HeallyCtaAction) => void;
+  heallyActionLoading?: HeallyCtaAction['type'] | null;
 }
 
-export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubbleProps) {
+export function ChatBubble({
+  message,
+  onRequestVerif,
+  isVerifLoading,
+  onHeallyAction,
+  heallyActionLoading,
+}: ChatBubbleProps) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const isUser = message.role === 'user';
@@ -39,6 +48,10 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
     !isUser && message.needsVerif && !message.verifStatus;
   const showVerifBadge =
     !isUser && message.needsVerif && message.verifStatus != null;
+
+  const parsed = !isUser ? parseHeallyCtas(message.content) : null;
+  const displayContent = isUser ? message.content : (parsed?.cleanContent ?? message.content);
+  const ctaActions = parsed?.actions ?? [];
 
   return (
     <Animated.View
@@ -66,14 +79,15 @@ export function ChatBubble({ message, onRequestVerif, isVerifLoading }: ChatBubb
           {isUser ? (
             <Text style={[styles.plainText, { color: '#FFFFFF' }]}>{message.content}</Text>
           ) : (
-            <MarkdownContent text={message.content} variant="assistant" />
+            <MarkdownContent text={displayContent} variant="assistant" />
           )}
         </View>
 
-        {!isUser && (message.thinkingSummary || message.thinkingDetail) ? (
-          <ThinkingBlock
-            summary={message.thinkingSummary}
-            detail={message.thinkingDetail}
+        {!isUser && ctaActions.length > 0 && onHeallyAction ? (
+          <HeallyChatActions
+            actions={ctaActions}
+            onAction={onHeallyAction}
+            loadingType={heallyActionLoading}
           />
         ) : null}
 

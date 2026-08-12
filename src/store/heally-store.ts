@@ -6,16 +6,20 @@ interface HeallyStore {
   sessions: ChatSession[];
   activeSessionId: number | null;
   isTyping: boolean;
-  activeTab: 'chat' | 'whatsapp';
   input: string;
+  pendingScheduleWait: boolean;
 
   setMessages: (messages: ChatMessage[]) => void;
   addMessage: (message: ChatMessage) => void;
-  setSessions: (sessions: ChatSession[]) => void;
-  setActiveSessionId: (sessionId: number | null) => void;
+  updateMessageVerif: (
+    messageId: number,
+    status: ChatMessage['verifStatus'],
+    doctorName?: string | null,
+    note?: string | null
+  ) => void;
   setTyping: (typing: boolean) => void;
-  setActiveTab: (tab: 'chat' | 'whatsapp') => void;
   setInput: (input: string) => void;
+  setPendingScheduleWait: (pending: boolean) => void;
   reset: () => void;
 }
 
@@ -24,16 +28,30 @@ export const useHeallyStore = create<HeallyStore>((set) => ({
   sessions: [],
   activeSessionId: null,
   isTyping: false,
-  activeTab: 'chat',
   input: '',
+  pendingScheduleWait: false,
 
   setMessages: (messages) => set({ messages }),
-  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
-  setSessions: (sessions) => set({ sessions }),
-  setActiveSessionId: (activeSessionId) => set({ activeSessionId }),
+
+  addMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
+
+  updateMessageVerif: (messageId, verifStatus, verifDoctorName, verifNote) =>
+    set((state) => ({
+      messages: state.messages.map((message) =>
+        message.id === messageId
+          ? {
+              ...message,
+              verifStatus,
+              verifDoctorName: verifDoctorName ?? message.verifDoctorName,
+              verifNote: verifNote ?? message.verifNote,
+            }
+          : message
+      ),
+    })),
+
   setTyping: (isTyping) => set({ isTyping }),
-  setActiveTab: (activeTab) => set({ activeTab }),
   setInput: (input) => set({ input }),
-  reset: () =>
-    set({ messages: [], sessions: [], activeSessionId: null, isTyping: false, activeTab: 'chat', input: '' }),
+  setPendingScheduleWait: (pendingScheduleWait) => set({ pendingScheduleWait }),
+  reset: () => set({ messages: [], isTyping: false, input: '', pendingScheduleWait: false }),
 }));
