@@ -3,6 +3,7 @@ import {
   View, Text, Modal, StyleSheet, TouchableOpacity, TextInput,
   Platform, useColorScheme, ActivityIndicator, Alert,
 } from 'react-native';
+// @ts-ignore
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { Icon } from '@/components/ui';

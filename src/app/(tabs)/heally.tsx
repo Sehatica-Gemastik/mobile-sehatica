@@ -33,6 +33,10 @@ const SCHEDULE_THINKING_STEPS = [
   'Menyesuaikan dengan kondisi pasien…',
 ];
 
+function formatRupiah(amount: number) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+}
+
 export default function HeallyScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
@@ -64,13 +68,13 @@ export default function HeallyScreen() {
   }, []);
 
   const { error: messagesError, isLoading } = useQuery({
-    queryKey: ['heally-messages'],
+    queryKey: ['heally-messages', activeSessionId],
     queryFn: async () => {
-      const msgs = await heallyService.getMessages();
+      const msgs = await heallyService.getMessages(activeSessionId ?? undefined);
       setMessages(msgs);
       return msgs;
     },
-    staleTime: 0,
+    enabled: Boolean(activeSessionId),
   });
 
   useFocusEffect(

@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { ChatMessage } from '@/types';
+import { ChatMessage, ChatSession } from '@/types';
 
 interface HeallyStore {
   messages: ChatMessage[];
+  sessions: ChatSession[];
+  activeSessionId: number | null;
   isTyping: boolean;
   input: string;
   pendingScheduleWait: boolean;
@@ -23,6 +25,8 @@ interface HeallyStore {
 
 export const useHeallyStore = create<HeallyStore>((set) => ({
   messages: [],
+  sessions: [],
+  activeSessionId: null,
   isTyping: false,
   input: '',
   pendingScheduleWait: false,
