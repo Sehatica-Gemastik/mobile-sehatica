@@ -3,7 +3,6 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
-    "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/playfair-display": "^0.4.2",
     "@expo/ui": "~57.0.9",
@@ -37,7 +36,6 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
     "react-native-gesture-handler": "~2.32.0",
-    "react-native-markdown-display": "^7.0.2",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
@@ -53,7 +51,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "test": "bun test tests/health-schema.test.js tests/screening-rules.test.js tests/schedule-reminder.test.js",
+    "test": "bun test tests/health-schema.test.js tests/screening-rules.test.js tests/schedule-reminder.test.js tests/lifestyle-derived.test.js tests/nutrition-engine.test.js",
     "typecheck": "bun node_modules/typescript/bin/tsc --noEmit",
     "start": "bun node_modules/expo/bin/cli start",
     "start:dev-client": "bun node_modules/expo/bin/cli start --dev-client",
