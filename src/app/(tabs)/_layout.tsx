@@ -1,24 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Slot } from 'expo-router';
 import { BottomTabBar } from '@/components/app-tabs';
-import { Colors } from '@/constants/theme';
+import { AppScreen } from '@/components/screen-background';
 
 export default function TabsLayout() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
-        <Slot />
-      </View>
+    <AppScreen style={styles.container}>
+      <Slot />
       <BottomTabBar />
-    </View>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1 },
 });

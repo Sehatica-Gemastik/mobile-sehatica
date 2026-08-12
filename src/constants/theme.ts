@@ -1,22 +1,29 @@
-// Sehatica design — white / gray / green (Hallo-inspired minimal)
-import { Platform } from 'react-native';
+import { Platform, ViewStyle } from 'react-native';
 
+/**
+ * Sehatica design tokens — clean SaaS (see DESIGN_SYSTEM.md)
+ *
+ * Canvas: mint-teal → peach gradient (GradientColors)
+ * Surfaces: white cards (backgroundCard) + Shadows.sm
+ * Type: Inter 400/500/600/700
+ * Primary: #00A7B1 teal
+ */
 export const Colors = {
   light: {
-    text: '#18181B',
-    textSecondary: '#52525B',
-    textMuted: '#A1A1AA',
-    background: '#FFFFFF',
+    text: '#1A2332',
+    textSecondary: '#64748B',
+    textMuted: '#94A3B8',
+    background: 'transparent',
     backgroundCard: '#FFFFFF',
-    backgroundElement: '#F4F4F5',
-    backgroundSelected: '#E4E4E7',
-    primary: '#16A34A',
-    primaryLight: '#F0FDF4',
-    primaryDark: '#15803D',
-    primaryMuted: '#86EFAC',
+    backgroundElement: '#F4F7F8',
+    backgroundSelected: '#E0F7FA',
+    primary: '#00A7B1',
+    primaryLight: '#E0F7FA',
+    primaryDark: '#008A93',
+    primaryMuted: '#B2EBF2',
     onPrimary: '#FFFFFF',
-    border: '#E4E4E7',
-    borderLight: '#F4F4F5',
+    border: 'rgba(0, 167, 177, 0.12)',
+    borderLight: 'rgba(148, 163, 184, 0.2)',
     amber: '#D97706',
     amberLight: '#FFFBEB',
     blue: '#2563EB',
@@ -24,26 +31,26 @@ export const Colors = {
     red: '#DC2626',
     redLight: '#FEF2F2',
     whatsapp: '#25D366',
-    shadow: 'rgba(0,0,0,0.04)',
+    shadow: 'rgba(0, 120, 130, 0.06)',
     tabBar: '#FFFFFF',
-    tabBarBorder: '#E4E4E7',
-    accent: '#16A34A',
+    tabBarBorder: 'rgba(0, 167, 177, 0.08)',
+    accent: '#00A7B1',
   },
   dark: {
-    text: '#18181B',
-    textSecondary: '#52525B',
-    textMuted: '#A1A1AA',
-    background: '#FFFFFF',
+    text: '#1A2332',
+    textSecondary: '#64748B',
+    textMuted: '#94A3B8',
+    background: 'transparent',
     backgroundCard: '#FFFFFF',
-    backgroundElement: '#F4F4F5',
-    backgroundSelected: '#E4E4E7',
-    primary: '#16A34A',
-    primaryLight: '#F0FDF4',
-    primaryDark: '#15803D',
-    primaryMuted: '#86EFAC',
+    backgroundElement: '#F4F7F8',
+    backgroundSelected: '#E0F7FA',
+    primary: '#00A7B1',
+    primaryLight: '#E0F7FA',
+    primaryDark: '#008A93',
+    primaryMuted: '#B2EBF2',
     onPrimary: '#FFFFFF',
-    border: '#E4E4E7',
-    borderLight: '#F4F4F5',
+    border: 'rgba(0, 167, 177, 0.12)',
+    borderLight: 'rgba(148, 163, 184, 0.2)',
     amber: '#D97706',
     amberLight: '#FFFBEB',
     blue: '#2563EB',
@@ -51,20 +58,27 @@ export const Colors = {
     red: '#DC2626',
     redLight: '#FEF2F2',
     whatsapp: '#25D366',
-    shadow: 'rgba(0,0,0,0.04)',
+    shadow: 'rgba(0, 120, 130, 0.06)',
     tabBar: '#FFFFFF',
-    tabBarBorder: '#E4E4E7',
-    accent: '#16A34A',
+    tabBarBorder: 'rgba(0, 167, 177, 0.08)',
+    accent: '#00A7B1',
   },
+} as const;
+
+export const GradientColors = {
+  start: '#DDF5F3',
+  middle: '#EEF9F8',
+  end: '#FFF0EB',
 } as const;
 
 export type ThemeColors = typeof Colors.light;
 export type ThemeColor = keyof ThemeColors;
 
 export const Fonts = {
-  regular: 'DMSans_400Regular',
-  medium: 'DMSans_500Medium',
-  bold: 'DMSans_700Bold',
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 } as const;
 
@@ -87,11 +101,11 @@ export const Spacing = {
 } as const;
 
 export const BorderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
   full: 9999,
 } as const;
 
@@ -104,7 +118,6 @@ export const FontSize = {
   xxl: 28,
 } as const;
 
-/** fixed icon sizes — do not pass raw numbers in screens */
 export const IconSize = {
   sm: 16,
   md: 20,
@@ -113,7 +126,52 @@ export const IconSize = {
 
 export type IconSizeToken = keyof typeof IconSize;
 
-/** kill native focus ring / underline on web + android */
+export const Shadows = {
+  none: {} as ViewStyle,
+  sm: Platform.select<ViewStyle>({
+    ios: {
+      shadowColor: '#007882',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+    },
+    android: { elevation: 2 },
+    default: {},
+  }) ?? {},
+  md: Platform.select<ViewStyle>({
+    ios: {
+      shadowColor: '#007882',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 16,
+    },
+    android: { elevation: 3 },
+    default: {},
+  }) ?? {},
+  stack: Platform.select<ViewStyle>({
+    ios: {
+      shadowColor: '#64748B',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 14,
+    },
+    android: { elevation: 5 },
+    default: {},
+  }) ?? {},
+} as const;
+
+/** Shadow for overlapping stack cards — front only when stacked; none when expanded */
+export function stackCardShadow(expanded: boolean, stackIndex: number): ViewStyle {
+  if (expanded || stackIndex > 0) return Shadows.none;
+  return Shadows.sm;
+}
+
+/** Fade cards behind the front card in stack mode */
+export function stackLayerOpacity(expanded: boolean, stackIndex: number): number {
+  if (expanded || stackIndex === 0) return 1;
+  return Math.max(0.38, 1 - stackIndex * 0.32);
+}
+
 export const nativeReset = Platform.select({
   web: {
     outlineWidth: 0,

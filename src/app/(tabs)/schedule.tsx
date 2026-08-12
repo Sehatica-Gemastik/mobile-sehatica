@@ -24,7 +24,6 @@ export default function ScheduleScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
-  const [showAIModal, setShowAIModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [type, setType] = useState<ScheduleType>('food');
   const [label, setLabel] = useState('');
@@ -67,18 +66,6 @@ export default function ScheduleScreen() {
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
-  const aiGenerateMutation = useMutation({
-    mutationFn: () => scheduleService.aiGenerate(today),
-    onSuccess: ({ warnings }) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] });
-      setShowAIModal(false);
-      if (warnings.length > 0) {
-        Alert.alert('Jadwal tersimpan', warnings.join('\n'));
-      }
-    },
-    onError: (err: any) => Alert.alert('Gagal', err.message),
-  });
-
   const done = items.filter((i: ScheduleItem) => i.done).length;
   const total = items.length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -108,18 +95,10 @@ export default function ScheduleScreen() {
           <TouchableOpacity
             accessibilityLabel="Tambah aktivitas"
             onPress={() => setShowAddModal(true)}
-            style={[styles.addBtn, { backgroundColor: colors.backgroundElement }]}
+            style={[styles.addBtn, { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
-            <Icon name="add" size="md" color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowAIModal(true)}
-            style={[styles.aiBtn, { backgroundColor: colors.primary }]}
-            activeOpacity={0.8}
-          >
-            <Icon name="sparkles" size="sm" color={colors.onPrimary} />
-            <Text style={styles.aiBtnText}>AI</Text>
+            <Icon name="add" size="md" color={colors.onPrimary} />
           </TouchableOpacity>
         </View>}
       >
@@ -176,7 +155,7 @@ export default function ScheduleScreen() {
             <EmptyState
               icon="calendar-outline"
               title="Belum ada jadwal hari ini"
-              description="Tambahkan aktivitas sendiri atau buat rekomendasi dengan AI"
+              description="Tambahkan aktivitas harianmu"
               actionLabel="Tambah aktivitas"
               onAction={() => setShowAddModal(true)}
             />
@@ -256,61 +235,6 @@ export default function ScheduleScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-
-      <Modal visible={showAIModal} animationType="slide" transparent>
-        <Pressable style={styles.overlay} onPress={() => setShowAIModal(false)}>
-          <Pressable style={[styles.modalCard, { backgroundColor: colors.backgroundCard }]} onPress={() => {}}>
-            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>AI Generate jadwal</Text>
-              <TouchableOpacity
-                onPress={() => setShowAIModal(false)}
-                style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}
-              >
-                <Icon name="close" size="sm" color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.aiInfo, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-              <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
-                <Icon name="sparkles" size="md" color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, gap: 6 }}>
-                <Text style={[styles.aiInfoTitle, { color: colors.text }]}>
-                  Heally membuat jadwal dari:
-                </Text>
-                {[
-                  'Ringkasan rekam medis yang tersimpan lokal',
-                  'Aktivitas makan, minum, dan olahraga',
-                  'Jadwal obat manual sebagai batasan waktu',
-                ].map((item, i) => (
-                  <View key={i} style={styles.aiPoint}>
-                    <Icon name="checkmark" size="sm" color={colors.primary} />
-                    <Text style={[styles.aiPointText, { color: colors.textSecondary }]}>{item}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <Text style={[styles.aiDisclaimer, { color: colors.textMuted }]}>
-              AI tidak boleh membuat jadwal obat. Rekomendasi lain tetap perlu Anda periksa sebelum disimpan.
-            </Text>
-
-            <Button
-              label="Generate sekarang"
-              onPress={() => aiGenerateMutation.mutate()}
-              loading={aiGenerateMutation.isPending}
-              fullWidth
-            />
-            <Button
-              label="Batal"
-              variant="ghost"
-              onPress={() => setShowAIModal(false)}
-              fullWidth
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -322,11 +246,6 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: BorderRadius.full,
     alignItems: 'center', justifyContent: 'center',
   },
-  aiBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 10, borderRadius: BorderRadius.full,
-  },
-  aiBtnText: { color: 'white', fontSize: FontSize.xs, fontFamily: Fonts.bold },
   progressBlock: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, gap: 4 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   progressBarBg: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
@@ -361,16 +280,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm, fontFamily: Fonts.regular,
   },
   medicationNote: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular },
-  aiInfo: {
-    flexDirection: 'row', gap: 12, padding: Spacing.base,
-    borderRadius: BorderRadius.md, alignItems: 'flex-start', borderWidth: 1,
-  },
-  aiAvatar: {
-    width: 40, height: 40, borderRadius: BorderRadius.sm,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  aiInfoTitle: { fontSize: FontSize.sm, fontFamily: Fonts.medium, marginBottom: 2 },
-  aiPoint: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  aiPointText: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
-  aiDisclaimer: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
 });

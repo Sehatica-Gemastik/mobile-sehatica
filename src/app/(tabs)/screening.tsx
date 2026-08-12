@@ -87,7 +87,7 @@ export default function ScreeningScreen() {
           <View style={styles.noticeText}>
             <Text style={[styles.noticeTitle, { color: colors.text }]}>Privat dan tersimpan lokal</Text>
             <Text style={[styles.noticeBody, { color: colors.textSecondary }]}>
-              Jawaban disimpan di perangkat ini dan disinkronkan ke server untuk Heally & jadwal harian.
+              Jawaban disimpan di perangkat ini dan disinkronkan ke server untuk jadwal harian.
             </Text>
           </View>
         </View>

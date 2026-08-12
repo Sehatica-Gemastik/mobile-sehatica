@@ -1,10 +1,15 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, Modal, StyleSheet, TouchableOpacity, TextInput,
   Platform, useColorScheme, ActivityIndicator, Alert,
 } from 'react-native';
-// @ts-ignore
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
+import {
+  CameraView,
+  useCameraPermissions,
+  scanFromURLAsync,
+  type BarcodeScanningResult,
+} from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
 import { Icon } from '@/components/ui';
 
@@ -15,50 +20,102 @@ type Props = {
   loading?: boolean;
 };
 
+type ScanMode = 'camera' | 'manual';
+
 export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [permission, requestPermission] = useCameraPermissions();
   const [manualCode, setManualCode] = useState('');
-  const [useManual, setUseManual] = useState(Platform.OS === 'web');
+  const [mode, setMode] = useState<ScanMode>(Platform.OS === 'web' ? 'manual' : 'camera');
+  const [requestingPermission, setRequestingPermission] = useState(false);
+  const [scanningImage, setScanningImage] = useState(false);
   const locked = useRef(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    locked.current = false;
+    setManualCode('');
+    if (Platform.OS === 'web') {
+      setMode('manual');
+      return;
+    }
+    setMode('camera');
+    setRequestingPermission(true);
+    void requestPermission().finally(() => setRequestingPermission(false));
+  }, [visible, requestPermission]);
+
+  const processCode = useCallback(async (raw: string) => {
+    if (locked.current || loading) return;
+    const code = raw.trim();
+    if (!code) return;
+    locked.current = true;
+    try {
+      await onScan(code);
+    } finally {
+      setTimeout(() => {
+        locked.current = false;
+      }, 1500);
+    }
+  }, [loading, onScan]);
 
   const handleBarcode = useCallback(
     async (result: BarcodeScanningResult) => {
-      if (locked.current || loading) return;
-      const raw = result.data?.trim();
-      if (!raw) return;
-      locked.current = true;
-      try {
-        await onScan(raw);
-      } finally {
-        setTimeout(() => {
-          locked.current = false;
-        }, 1500);
-      }
+      await processCode(result.data ?? '');
     },
-    [loading, onScan]
+    [processCode]
   );
 
   const submitManual = async () => {
-    const code = manualCode.trim();
-    if (!code) {
-      Alert.alert('Perhatian', 'Masukkan kode dokter');
+    await processCode(manualCode);
+  };
+
+  const pickQrFromGallery = async () => {
+    if (loading || scanningImage) return;
+
+    const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!mediaPermission.granted) {
+      Alert.alert('Izin galeri', 'Izinkan akses galeri untuk memilih foto QR dokter.');
       return;
     }
-    await onScan(code);
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+      allowsEditing: false,
+    });
+
+    if (result.canceled || !result.assets[0]?.uri) return;
+
+    setScanningImage(true);
+    try {
+      const scans = await scanFromURLAsync(result.assets[0].uri, ['qr']);
+      if (scans.length === 0 || !scans[0]?.data) {
+        Alert.alert('QR tidak ditemukan', 'Pastikan foto berisi QR dokter yang jelas.');
+        return;
+      }
+      await processCode(scans[0].data);
+    } catch {
+      Alert.alert('Gagal', 'Tidak bisa membaca QR dari foto. Coba foto yang lebih jelas.');
+    } finally {
+      setScanningImage(false);
+    }
   };
 
   const openCamera = async () => {
     if (!permission?.granted) {
+      setRequestingPermission(true);
       const res = await requestPermission();
+      setRequestingPermission(false);
       if (!res.granted) {
-        Alert.alert('Izin kamera', 'Izinkan kamera untuk scan QR dokter');
+        Alert.alert('Izin kamera', 'Izinkan kamera untuk scan QR dokter.');
         return;
       }
     }
-    setUseManual(false);
+    setMode('camera');
   };
+
+  const showCamera = mode === 'camera' && Platform.OS !== 'web' && permission?.granted;
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
@@ -74,7 +131,7 @@ export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
           <View style={{ width: 40 }} />
         </View>
 
-        {!useManual && Platform.OS !== 'web' && permission?.granted ? (
+        {showCamera ? (
           <View style={styles.cameraWrap}>
             <CameraView
               style={StyleSheet.absoluteFill}
@@ -86,7 +143,7 @@ export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
               <View style={[styles.frame, { borderColor: colors.primary }]} />
               <Text style={styles.hint}>Arahkan kamera ke QR dokter</Text>
             </View>
-            {loading ? (
+            {(loading || scanningImage) ? (
               <View style={styles.loadingMask}>
                 <ActivityIndicator color="#fff" />
               </View>
@@ -94,9 +151,15 @@ export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
           </View>
         ) : (
           <View style={styles.manualWrap}>
+            {requestingPermission ? (
+              <ActivityIndicator color={colors.primary} style={{ marginBottom: Spacing.base }} />
+            ) : null}
+
             <View style={[styles.manualCard, { backgroundColor: colors.backgroundElement }]}>
               <Icon name="qr-code-outline" size="lg" color={colors.primary} />
-              <Text style={[styles.manualTitle, { color: colors.text }]}>Masukkan kode dokter</Text>
+              <Text style={[styles.manualTitle, { color: colors.text }]}>
+                {Platform.OS === 'web' ? 'Masukkan kode dokter' : 'Scan QR dokter'}
+              </Text>
               <Text style={[styles.manualDesc, { color: colors.textSecondary }]}>
                 Format: sehatica:doctor:ID atau DOC-ID
               </Text>
@@ -120,8 +183,8 @@ export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
               />
               <TouchableOpacity
                 onPress={submitManual}
-                disabled={loading}
-                style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.6 : 1 }]}
+                disabled={loading || scanningImage}
+                style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading || scanningImage ? 0.6 : 1 }]}
                 activeOpacity={0.8}
               >
                 {loading ? (
@@ -136,24 +199,35 @@ export function DoctorQrScanner({ visible, onClose, onScan, loading }: Props) {
             </View>
 
             {Platform.OS !== 'web' ? (
-              <TouchableOpacity onPress={openCamera} style={styles.switchBtn} activeOpacity={0.7}>
-                <Icon name="camera-outline" size="sm" color={colors.primary} />
-                <Text style={[styles.switchText, { color: colors.primary }]}>Gunakan kamera</Text>
-              </TouchableOpacity>
+              <View style={styles.altActions}>
+                <TouchableOpacity onPress={openCamera} style={styles.switchBtn} activeOpacity={0.7}>
+                  <Icon name="camera-outline" size="sm" color={colors.primary} />
+                  <Text style={[styles.switchText, { color: colors.primary }]}>Gunakan kamera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={pickQrFromGallery}
+                  disabled={loading || scanningImage}
+                  style={styles.switchBtn}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="image-outline" size="sm" color={colors.primary} />
+                  <Text style={[styles.switchText, { color: colors.primary }]}>Pilih foto QR</Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
         )}
 
-        {!useManual && Platform.OS !== 'web' ? (
-          <TouchableOpacity
-            onPress={() => setUseManual(true)}
-            style={[styles.footerBtn, { borderTopColor: colors.border }]}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Atau masukkan kode manual
-            </Text>
-          </TouchableOpacity>
+        {showCamera ? (
+          <View style={[styles.footerActions, { borderTopColor: colors.border }]}>
+            <TouchableOpacity onPress={pickQrFromGallery} style={styles.footerBtn} activeOpacity={0.7}>
+              <Icon name="image-outline" size="sm" color={colors.primary} />
+              <Text style={[styles.footerText, { color: colors.primary }]}>Pilih foto QR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setMode('manual')} style={styles.footerBtn} activeOpacity={0.7}>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>Masukkan kode manual</Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
       </View>
     </Modal>
@@ -232,6 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   primaryBtnText: { color: '#fff', fontFamily: Fonts.bold, fontSize: FontSize.sm },
+  altActions: { gap: 4 },
   switchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,11 +315,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   switchText: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
-  footerBtn: {
+  footerActions: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingVertical: Spacing.base,
-    alignItems: 'center',
+    paddingVertical: Spacing.sm,
     paddingBottom: Spacing.xxl,
+    gap: 4,
+  },
+  footerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
   },
   footerText: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
 });

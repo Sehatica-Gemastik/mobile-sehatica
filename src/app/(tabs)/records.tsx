@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, Modal, TextInput, ActivityIndicator,
@@ -24,14 +24,13 @@ import { medicalStorageBlockedReason } from '@/utils/runtime-environment';
 import { showUserMessage } from '@/utils/user-message';
 import { bytesFromBase64, readDocumentFile } from '@/utils/read-document-file';
 import { delay, waitForUi } from '@/utils/wait-for-ui';
-import { RecordType } from '@/types';
 
-const FILTERS: { id: 'all' | RecordType; label: string }[] = [
-  { id: 'all', label: 'Semua' },
-  { id: 'consultation', label: 'Konsultasi' },
-  { id: 'image', label: 'Lab/Foto' },
-  { id: 'voice', label: 'Rekaman' },
-  { id: 'note', label: 'Catatan' },
+type SortOrder = 'newest' | 'oldest';
+const PAGE_SIZE = 10;
+
+const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
+  { id: 'newest', label: 'Terbaru' },
+  { id: 'oldest', label: 'Terlama' },
 ];
 
 type AddType = 'text' | 'image' | 'voice';
@@ -47,7 +46,8 @@ export default function RecordsScreen() {
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
 
-  const [activeFilter, setActiveFilter] = useState<'all' | RecordType>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+  const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<AddType>('text');
   const [title, setTitle] = useState('');
@@ -59,10 +59,24 @@ export default function RecordsScreen() {
     setProcessing((prev) => (prev ? { ...prev, phase } : prev));
   };
 
-  const { data: records = [], error, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['records', activeFilter],
-    queryFn: () => recordsService.getAll(activeFilter === 'all' ? undefined : activeFilter),
+  const { data: allRecords = [], error, isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ['records'],
+    queryFn: () => recordsService.getAll(),
   });
+
+  const sortedRecords = useMemo(() => {
+    const copy = [...allRecords];
+    copy.sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return sortOrder === 'newest' ? bTime - aTime : aTime - bTime;
+    });
+    return copy;
+  }, [allRecords, sortOrder]);
+
+  const visibleRecords = sortedRecords.slice(0, page * PAGE_SIZE);
+  const hasMore = visibleRecords.length < sortedRecords.length;
+  const records = visibleRecords;
 
   const createMutation = useMutation({
     mutationFn: recordsService.create,
@@ -270,7 +284,7 @@ export default function RecordsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Rekam medis"
-        subtitle={`${records.length} catatan tersimpan`}
+        subtitle={`${allRecords.length} catatan tersimpan`}
         right={
           <TouchableOpacity
             onPress={() => setShowAdd(true)}
@@ -284,12 +298,15 @@ export default function RecordsScreen() {
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
           <View style={styles.filters}>
-            {FILTERS.map((f) => (
+            {SORT_OPTIONS.map((option) => (
               <Chip
-                key={f.id}
-                label={f.label}
-                active={activeFilter === f.id}
-                onPress={() => setActiveFilter(f.id)}
+                key={option.id}
+                label={option.label}
+                active={sortOrder === option.id}
+                onPress={() => {
+                  setSortOrder(option.id);
+                  setPage(1);
+                }}
               />
             ))}
           </View>
@@ -328,13 +345,30 @@ export default function RecordsScreen() {
               description="Tap tombol + untuk menambahkan rekam medis Anda"
             />
           ) : (
-            records.map((rec) => (
-              <MedicalRecordCard
-                key={rec.id}
-                record={rec}
-                onPress={() => router.push(`/record/${rec.id}`)}
-              />
-            ))
+            <>
+              {records.map((rec) => (
+                <MedicalRecordCard
+                  key={rec.id}
+                  record={rec}
+                  onPress={() => router.push(`/record/${rec.id}`)}
+                />
+              ))}
+              {hasMore ? (
+                <TouchableOpacity
+                  onPress={() => setPage((p) => p + 1)}
+                  style={[styles.loadMore, { backgroundColor: colors.backgroundElement }]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                    Muat lebih banyak ({visibleRecords.length}/{sortedRecords.length})
+                  </Text>
+                </TouchableOpacity>
+              ) : sortedRecords.length > PAGE_SIZE ? (
+                <Text style={[styles.pageInfo, { color: colors.textMuted }]}>
+                  Menampilkan {sortedRecords.length} catatan
+                </Text>
+              ) : null}
+            </>
           )}
         </ScrollView>
       )}
@@ -485,6 +519,22 @@ const styles = StyleSheet.create({
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: Spacing.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
+  loadMore: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: BorderRadius.lg,
+    marginTop: 4,
+  },
+  loadMoreText: {
+    fontSize: FontSize.sm,
+    fontFamily: Fonts.bold,
+  },
+  pageInfo: {
+    textAlign: 'center',
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.regular,
+    marginTop: 8,
+  },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
     borderTopLeftRadius: BorderRadius.xxl,

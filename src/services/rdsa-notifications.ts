@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const NOTIFIED_KEY = 'heally_notified_ask_ids';
+const NOTIFIED_KEY = 'rdsa_notified_ask_ids';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -51,7 +51,7 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   return req.granted;
 }
 
-export async function presentHeallyAskNotification(input: {
+export async function presentRdsaNotification(input: {
   askId: string;
   title: string;
   body: string;
@@ -61,7 +61,6 @@ export async function presentHeallyAskNotification(input: {
 
   const mod = await loadNotifications();
   if (!mod) {
-    // web / missing module — still mark so we don't spam
     notified.add(input.askId);
     await writeNotifiedIds(notified);
     return false;
@@ -74,7 +73,7 @@ export async function presentHeallyAskNotification(input: {
     content: {
       title: input.title,
       body: input.body,
-      data: { askId: input.askId, type: 'heally_ask' },
+      data: { askId: input.askId, type: 'rdsa_ask' },
       sound: true,
     },
     trigger: null,

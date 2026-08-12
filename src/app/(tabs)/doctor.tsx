@@ -162,7 +162,7 @@ export default function DoctorScreen() {
         ]}
         activeOpacity={0.8}
         disabled={!doctor.isAvailable}
-        onPress={() => router.push('/(tabs)/heally')}
+        onPress={() => Alert.alert('Hubungi dokter', 'Fitur konsultasi langsung akan segera hadir.')}
       >
         <Icon
           name="call-outline"
@@ -175,7 +175,7 @@ export default function DoctorScreen() {
             { color: doctor.isAvailable ? 'white' : colors.textMuted },
           ]}
         >
-          {doctor.isAvailable ? 'Buka Heally untuk review' : 'Sedang tidak tersedia'}
+          {doctor.isAvailable ? 'Hubungi dokter' : 'Sedang tidak tersedia'}
         </Text>
       </TouchableOpacity>
     </View>

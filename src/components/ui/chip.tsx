@@ -18,19 +18,19 @@ export function Chip({ label, active, onPress, icon, style }: Props) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.75}
+      activeOpacity={0.82}
       style={[
         styles.chip,
         {
-          backgroundColor: active ? colors.primary : colors.backgroundElement,
+          backgroundColor: active ? colors.primaryLight : colors.backgroundElement,
         },
         style,
       ]}
     >
       {icon ? (
-        <Icon name={icon} size="sm" color={active ? colors.onPrimary : colors.textSecondary} />
+        <Icon name={icon} size="sm" color={active ? colors.primary : colors.textSecondary} />
       ) : null}
-      <Text style={[styles.label, { color: active ? colors.onPrimary : colors.textSecondary }]}>
+      <Text style={[styles.label, { color: active ? colors.primary : colors.textSecondary }]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -42,8 +42,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     borderRadius: BorderRadius.full,
   },
   label: { fontSize: FontSize.xs, fontFamily: Fonts.medium },

@@ -9,10 +9,13 @@ import { useAuthStore } from '@/store/auth-store';
 import { authService } from '@/services/auth.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { Button, TextField, Icon } from '@/components/ui';
+import { AppScreen } from '@/components/screen-background';
+import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 
 export default function LoginScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
+  const topPadding = useScreenTopPadding(Spacing.lg);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,13 +42,14 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <AppScreen style={styles.container}>
+      <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -55,7 +59,7 @@ export default function LoginScreen() {
             </View>
             <Text style={[styles.brand, { color: colors.text }]}>Sehatica</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              Asisten kesehatan cerdas Anda
+              Pantau kesehatan Anda dengan mudah
             </Text>
           </View>
 
@@ -105,12 +109,14 @@ export default function LoginScreen() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  safe: { flex: 1 },
   scroll: {
     flexGrow: 1,
     paddingHorizontal: Spacing.lg,

@@ -27,7 +27,7 @@ export function TextField({
       {label ? (
         <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
       ) : null}
-      <View style={[styles.wrap, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+      <View style={[styles.wrap, { backgroundColor: colors.backgroundCard, borderColor: colors.borderLight }]}>
         {icon ? <Icon name={icon} size="sm" color={colors.textMuted} /> : null}
         <TextInput
           {...rest}
@@ -59,9 +59,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 13 : 11,
   },
   input: {
     flex: 1,

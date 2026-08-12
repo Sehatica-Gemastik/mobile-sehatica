@@ -39,14 +39,14 @@ export const dailyLogsService = {
       logDate,
       time: normalizeTimeInput(data.time ?? localTimeKey()),
     });
-    await dailySyncService.sync(logDate, { checkResume: false });
+    await dailySyncService.sync(logDate);
     return log;
   },
 
   delete: async (id: number) => {
     const date = localDateKey();
     const result = { deleted: await deleteDailyLog(ownerUserId(), id) };
-    await dailySyncService.sync(date, { checkResume: false });
+    await dailySyncService.sync(date);
     return result;
   },
 };

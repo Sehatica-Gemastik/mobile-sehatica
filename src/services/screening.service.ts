@@ -13,7 +13,7 @@ export const screeningService = {
   latest: () => getLatestScreening(ownerUserId()),
   complete: async (answers: ScreeningAnswers) => {
     const session = await saveScreening(ownerUserId(), answers);
-    await dailySyncService.sync(undefined, { checkResume: false });
+    await dailySyncService.sync();
     return session;
   },
 };
