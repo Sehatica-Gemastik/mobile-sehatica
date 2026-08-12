@@ -22,9 +22,15 @@
     "expo-image": "~57.0.2",
     "expo-image-picker": "~57.0.8",
     "expo-linear-gradient": "~57.0.1",
+<<<<<<< Updated upstream
     "expo-linking": "~57.0.5",
     "expo-notifications": "~57.0.9",
     "expo-router": "~57.0.11",
+=======
+    "expo-linking": "~57.0.4",
+    "expo-notifications": "~57.0.9",
+    "expo-router": "~57.0.9",
+>>>>>>> Stashed changes
     "expo-secure-store": "^57.0.1",
     "expo-splash-screen": "~57.0.5",
     "expo-sqlite": "~57.0.1",

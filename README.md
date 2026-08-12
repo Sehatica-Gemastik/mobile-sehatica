@@ -46,6 +46,26 @@ This command will move the starter code to the **app-example** directory and cre
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+### Domain A implementation status (PRD-A)
+
+Target Kesehatan / risk badge + manual data-entry live on Beranda (`src/app/(tabs)/index.tsx`),
+Critical Alert banner (`src/components/alert-banner.tsx`), Smart Schedule manual create/delete +
+"belum diverifikasi" badge (`src/app/(tabs)/schedule.tsx`, `src/components/schedule-item.tsx`),
+local reminders via `expo-notifications` (`src/services/notifications.service.ts`).
+
+- Local reminders only run on iOS/Android (Expo Go is fine, no dev build needed) — no-op on web,
+  since browsers can't reliably fire a scheduled notification after the tab closes.
+- Backend must be running for the app to work — see `backend-sehatica/README.md`. The dev API base
+  URL is `127.0.0.1` (not `localhost`) in `src/constants/api.ts` — on some machines `localhost`
+  resolves to a different process over IPv6 before reaching the backend.
+- Google Calendar sync (PRD-A §2.7) is **not implemented** — needs Google OAuth credentials only
+  the team can provision; picked lowest-priority per the PRD.
+
+Run the Playwright e2e checks for these (needs `npx expo start --web` and the backend both running):
+```sh
+npx playwright test tests/risk-dashboard.spec.ts
+```
+
 ### Graphify setup
 
 If there are more updates on the project, restart the graphify:

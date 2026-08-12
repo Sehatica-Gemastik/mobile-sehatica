@@ -10,7 +10,10 @@ const getBaseUrl = () => {
     // Android emulator routes localhost to 10.0.2.2
     return 'http://10.0.2.2:3000/api/v1';
   }
-  return 'http://localhost:3000/api/v1';
+  // 127.0.0.1 explicit (not "localhost") — on some dev machines "localhost"
+  // resolves to ::1 first and can hit an unrelated process bound to the same
+  // port over IPv6, which silently 404s instead of reaching this backend.
+  return 'http://127.0.0.1:3000/api/v1';
 };
 
 export const API_BASE_URL = getBaseUrl();
@@ -38,7 +41,20 @@ export const API_ENDPOINTS = {
   aiGenerateSchedule: '/schedules/ai-generate',
   aiOcr: '/ai/ocr',
 
+<<<<<<< Updated upstream
   // Heally AI (backend chat + RDSA)
+=======
+  // Risk Profile / Scoring Engine
+  riskProfile: '/risk-profile',
+  scoringLatest: '/scoring/latest',
+
+  // Critical Alerts
+  alerts: '/alerts',
+  activeAlerts: '/alerts?active=true',
+  acknowledgeAlert: (id: number) => `/alerts/${id}/acknowledge`,
+
+  // Heally AI
+>>>>>>> Stashed changes
   heallyMessages: '/heally/messages',
   heallyChat: '/heally/chat',
   heallyVerifRequest: (messageId: number) => `/heally/verif-request/${messageId}`,

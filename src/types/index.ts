@@ -38,6 +38,8 @@ export interface MedicalRecord {
 
 // ── Schedules ───────────────────────────────────────────────────────────────
 export type ScheduleType = 'food' | 'pill' | 'exercise' | 'water' | 'other';
+export type ScheduleVerifStatus = 'unverified' | 'verified' | 'revised';
+export type ScheduleSource = 'manual' | 'heally_generated' | 'dari_konsultasi';
 
 export interface ScheduleItem {
   id: number;
@@ -50,9 +52,12 @@ export interface ScheduleItem {
   scheduleDate: string;
   isAiGenerated: boolean;
   colorScheme: string | null;
+  verifStatus: ScheduleVerifStatus;
+  source: ScheduleSource;
   createdAt: string;
 }
 
+<<<<<<< Updated upstream
 // ── Daily Logs ──────────────────────────────────────────────────────────────
 export type DailyLogType = 'food' | 'medication' | 'exercise' | 'water';
 
@@ -95,6 +100,66 @@ export interface ScreeningSession {
   missingChecks: ScreeningCheck[];
   status: ScreeningStatus;
   completedAt: string;
+=======
+// ── Risk Profile / Scoring Engine / Target Kesehatan ─────────────────────────
+export type RiskLevel = 'rendah' | 'sedang' | 'tinggi';
+export type SmokingHabit = 'tidak' | 'kadang' | 'rutin';
+export type DataSource = 'heally_checkin' | 'checkin_berkala' | 'ocr' | 'manual' | 'wa';
+
+export interface RiskProfile {
+  id: number;
+  userId: number;
+  tensiSistolik: number | null;
+  tensiDiastolik: number | null;
+  tglUkurTensiTerakhir: string | null;
+  gulaDarahPuasa: number | null;
+  tglUkurGulaTerakhir: string | null;
+  tinggiCm: number | null;
+  beratKg: string | null;
+  lingkarPerutCm: number | null;
+  riwayatKeluarga: { hipertensi: boolean; diabetes: boolean; jantung: boolean; stroke: boolean } | null;
+  kebiasaanMerokok: SmokingHabit | null;
+  frekuensiSayurBuahPerMinggu: number | null;
+  frekuensiAktivitasFisikPerMinggu: number | null;
+  jenisAktivitas: string | null;
+  sumberData: DataSource;
+  updatedAt: string;
+}
+
+export interface RiskScore {
+  id: number;
+  userId: number;
+  level: RiskLevel;
+  skorMentah: string;
+  tglDihitung: string;
+  versiRule: string;
+}
+
+export interface HealthTargetMetric {
+  label: string;
+  targetLabel: string;
+  unit: string;
+  currentValue: number | string | null;
+}
+
+export interface HealthTarget {
+  jenisPtm: string;
+  label: string;
+  targets: HealthTargetMetric[];
+}
+
+// ── Critical Alerts ────────────────────────────────────────────────────────
+export interface CriticalAlert {
+  id: number;
+  userId: number;
+  jenisParameter: string;
+  nilaiTrigger: string;
+  thresholdTerlampaui: string;
+  tgl: string;
+  statusEskalasiDokter: boolean;
+  channelTerkirim: string[] | null;
+  acknowledgedAt: string | null;
+>>>>>>> Stashed changes
 }
 
 // ── Chat ────────────────────────────────────────────────────────────────────
@@ -184,6 +249,9 @@ export interface DailyInsight {
 
 export interface DashboardData {
   today: string;
+  riskScore: RiskScore | null;
+  healthTarget: HealthTarget | null;
+  activeAlerts: CriticalAlert[];
   scheduleProgress: {
     done: number;
     total: number;

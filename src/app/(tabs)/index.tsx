@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
+<<<<<<< Updated upstream
   RefreshControl, ActivityIndicator, useColorScheme, Modal,
   Pressable, TextInput, Alert,
+=======
+  RefreshControl, ActivityIndicator, useColorScheme, Alert,
+>>>>>>> Stashed changes
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleService } from '@/services/schedule.service';
+<<<<<<< Updated upstream
 import { recordsService } from '@/services/records.service';
 import { dailyLogsService } from '@/services/daily-logs.service';
 import { screeningService } from '@/services/screening.service';
 import { scheduleRemindersService } from '@/services/schedule-reminders.service';
 import { localDateKey } from '@/utils/local-date';
+=======
+import { riskService, RiskProfileInput } from '@/services/risk.service';
+import { alertsService } from '@/services/alerts.service';
+>>>>>>> Stashed changes
 import { useAuthStore } from '@/store/auth-store';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { ScheduleItemCard } from '@/components/schedule-item';
 import { MedicalRecordCard } from '@/components/medical-record-card';
+<<<<<<< Updated upstream
 import { Button, Icon, scheduleIcons } from '@/components/ui';
 import { DailyLog, DailyLogType, ScheduleItem } from '@/types';
 
@@ -33,12 +43,20 @@ const LOG_TITLES: Record<DailyLogType, string> = {
   exercise: 'Olahraga',
   water: 'Minum air',
 };
+=======
+import { RiskBadge } from '@/components/risk-badge';
+import { AlertBanner } from '@/components/alert-banner';
+import { HealthProfileModal } from '@/components/health-profile-modal';
+import { Icon, scheduleIcons } from '@/components/ui';
+import { ScheduleItem } from '@/types';
+>>>>>>> Stashed changes
 
 export default function HomeScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+<<<<<<< Updated upstream
   const today = localDateKey();
   const [showLogModal, setShowLogModal] = useState(false);
   const [logType, setLogType] = useState<DailyLogType>('food');
@@ -46,6 +64,10 @@ export default function HomeScreen() {
   const [logQuantity, setLogQuantity] = useState('');
   const [logDetail, setLogDetail] = useState('');
   const [logTime, setLogTime] = useState('');
+=======
+  const [showHealthModal, setShowHealthModal] = useState(false);
+  const [acknowledgingId, setAcknowledgingId] = useState<number | null>(null);
+>>>>>>> Stashed changes
 
   const {
     data: recentRecords = [],
@@ -86,6 +108,11 @@ export default function HomeScreen() {
     queryFn: screeningService.latest,
   });
 
+  const { data: riskProfile } = useQuery({
+    queryKey: ['risk-profile'],
+    queryFn: riskService.get,
+  });
+
   const toggleMutation = useMutation({
     mutationFn: scheduleService.toggle,
     onSuccess: () => {
@@ -93,6 +120,7 @@ export default function HomeScreen() {
     },
   });
 
+<<<<<<< Updated upstream
   const createLogMutation = useMutation({
     mutationFn: dailyLogsService.create,
     onSuccess: () => {
@@ -138,6 +166,30 @@ export default function HomeScreen() {
     ]
   );
 
+=======
+  const healthProfileMutation = useMutation({
+    mutationFn: (data: RiskProfileInput) => riskService.upsert(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['risk-profile'] });
+      setShowHealthModal(false);
+    },
+    onError: (err: any) => Alert.alert('Gagal', err.message ?? 'Gagal menyimpan data kesehatan'),
+  });
+
+  const acknowledgeMutation = useMutation({
+    mutationFn: (id: number) => {
+      setAcknowledgingId(id);
+      return alertsService.acknowledge(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setAcknowledgingId(null);
+    },
+    onError: () => setAcknowledgingId(null),
+  });
+
+>>>>>>> Stashed changes
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Selamat pagi';
@@ -236,7 +288,65 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.body}>
+<<<<<<< Updated upstream
           {recentRecords.length === 0 && (
+=======
+          {dashboard?.activeAlerts && dashboard.activeAlerts.length > 0 ? (
+            <AlertBanner
+              alerts={dashboard.activeAlerts}
+              onAcknowledge={(id) => acknowledgeMutation.mutate(id)}
+              acknowledgingId={acknowledgingId}
+            />
+          ) : null}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Target Kesehatan</Text>
+              <TouchableOpacity onPress={() => setShowHealthModal(true)}>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>
+                  {riskProfile ? 'Update data' : 'Isi data'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {dashboard?.riskScore ? <RiskBadge level={dashboard.riskScore.level} /> : null}
+
+            {dashboard?.healthTarget ? (
+              <View style={[styles.targetCard, { borderColor: colors.border }]}>
+                <Text style={[styles.targetLabel, { color: colors.text }]}>{dashboard.healthTarget.label}</Text>
+                {dashboard.healthTarget.targets.map((t, i) => (
+                  <View key={i} style={styles.targetRow}>
+                    <Text style={[styles.targetMetric, { color: colors.textSecondary }]}>{t.label}</Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={[styles.targetCurrent, { color: colors.text }]}>
+                        {t.currentValue ?? '–'} {t.unit}
+                      </Text>
+                      <Text style={[styles.targetGoal, { color: colors.textMuted }]}>Target: {t.targetLabel} {t.unit}</Text>
+                    </View>
+                  </View>
+                ))}
+                <Text style={[styles.targetDisclaimer, { color: colors.textMuted }]}>
+                  Angka target bersifat acuan umum, belum divalidasi dokter pembimbing.
+                </Text>
+              </View>
+            ) : !dashboard?.riskScore ? (
+              <TouchableOpacity
+                onPress={() => setShowHealthModal(true)}
+                style={[styles.emptyCard, { borderColor: colors.border }]}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.emptyIcon, { backgroundColor: colors.backgroundElement }]}>
+                  <Icon name="pulse-outline" size="md" color={colors.textMuted} />
+                </View>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  Isi data kesehatan untuk melihat level risiko & target kesehatan Anda.
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {(!dashboard?.recentRecords || dashboard.recentRecords.length === 0) && (
+>>>>>>> Stashed changes
             <TouchableOpacity
               onPress={() => router.push('/(tabs)/records')}
               style={[styles.uploadCard, { backgroundColor: colors.amberLight, borderColor: '#FDE68A' }]}
@@ -391,6 +501,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+<<<<<<< Updated upstream
       <Modal visible={showLogModal} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setShowLogModal(false)}>
           <Pressable style={[styles.modalCard, { backgroundColor: colors.backgroundCard }]} onPress={() => {}}>
@@ -456,6 +567,15 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+=======
+      <HealthProfileModal
+        visible={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+        onSubmit={(data) => healthProfileMutation.mutate(data)}
+        submitting={healthProfileMutation.isPending}
+        initial={riskProfile}
+      />
+>>>>>>> Stashed changes
     </View>
   );
 }
@@ -553,4 +673,11 @@ const styles = StyleSheet.create({
   },
   emptyIcon: { width: 36, height: 36, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: FontSize.xs, lineHeight: 18, flex: 1, fontFamily: Fonts.regular },
+  targetCard: { borderRadius: BorderRadius.md, borderWidth: 1, padding: Spacing.base, gap: 10, marginTop: 8 },
+  targetLabel: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  targetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  targetMetric: { fontSize: FontSize.xs, fontFamily: Fonts.medium, flex: 1 },
+  targetCurrent: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  targetGoal: { fontSize: 10, fontFamily: Fonts.regular },
+  targetDisclaimer: { fontSize: 10, fontFamily: Fonts.regular, lineHeight: 14, marginTop: 2 },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, Modal, ActivityIndicator, Alert,
@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleService } from '@/services/schedule.service';
+<<<<<<< Updated upstream
 import { localDateKey } from '@/utils/local-date';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { ScheduleItemCard } from '@/components/schedule-item';
@@ -18,6 +19,20 @@ const SCHEDULE_TYPES: { type: ScheduleType; label: string }[] = [
   { type: 'exercise', label: 'Olahraga' },
   { type: 'water', label: 'Minum' },
   { type: 'other', label: 'Lainnya' },
+=======
+import { cancelReminderForItem, resyncRemindersForItems, scheduleReminderForItem } from '@/services/notifications.service';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { ScheduleItemCard } from '@/components/schedule-item';
+import { Button, Chip, EmptyState, Icon, ScreenHeader, TextField, scheduleIcons } from '@/components/ui';
+import { ScheduleItem, ScheduleType } from '@/types';
+
+const TYPE_OPTIONS: Array<{ type: ScheduleType; label: string; colorScheme: string }> = [
+  { type: 'food', label: 'Makan', colorScheme: 'orange' },
+  { type: 'pill', label: 'Obat', colorScheme: 'blue' },
+  { type: 'exercise', label: 'Olahraga', colorScheme: 'green' },
+  { type: 'water', label: 'Minum air', colorScheme: 'cyan' },
+  { type: 'other', label: 'Lainnya', colorScheme: 'purple' },
+>>>>>>> Stashed changes
 ];
 
 export default function ScheduleScreen() {
@@ -25,11 +40,19 @@ export default function ScheduleScreen() {
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
   const [showAIModal, setShowAIModal] = useState(false);
+<<<<<<< Updated upstream
   const [showAddModal, setShowAddModal] = useState(false);
   const [type, setType] = useState<ScheduleType>('food');
   const [label, setLabel] = useState('');
   const [detail, setDetail] = useState('');
   const [time, setTime] = useState('07:00');
+=======
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newType, setNewType] = useState<ScheduleType>('pill');
+  const [newLabel, setNewLabel] = useState('');
+  const [newDetail, setNewDetail] = useState('');
+  const [newTime, setNewTime] = useState('');
+>>>>>>> Stashed changes
 
   const today = localDateKey();
   const todayLabel = new Date().toLocaleDateString('id-ID', {
@@ -41,16 +64,34 @@ export default function ScheduleScreen() {
     queryFn: () => scheduleService.getForDate(today),
   });
 
+  // Sinkronkan reminder lokal tiap kali daftar hari ini berubah (mis. app baru
+  // dibuka lagi) — device-local scheduling, tidak butuh trigger server.
+  useEffect(() => {
+    resyncRemindersForItems(items);
+  }, [items]);
+
   const toggleMutation = useMutation({
     mutationFn: scheduleService.toggle,
-    onSuccess: () => {
+    onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
+<<<<<<< Updated upstream
     },
   });
 
   const createMutation = useMutation({
     mutationFn: scheduleService.create,
     onSuccess: () => {
+=======
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      if (updated.done) cancelReminderForItem(updated.id);
+      else scheduleReminderForItem(updated);
+    },
+  });
+
+  const aiGenerateMutation = useMutation({
+    mutationFn: scheduleService.aiGenerate,
+    onSuccess: (created) => {
+>>>>>>> Stashed changes
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
       setShowAddModal(false);
       setType('food');
@@ -72,12 +113,70 @@ export default function ScheduleScreen() {
     onSuccess: ({ warnings }) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
       setShowAIModal(false);
+<<<<<<< Updated upstream
       if (warnings.length > 0) {
         Alert.alert('Jadwal tersimpan', warnings.join('\n'));
       }
+=======
+      resyncRemindersForItems(created);
+>>>>>>> Stashed changes
     },
     onError: (err: any) => Alert.alert('Gagal', err.message),
   });
+
+  const resetCreateForm = () => {
+    setNewType('pill');
+    setNewLabel('');
+    setNewDetail('');
+    setNewTime('');
+  };
+
+  const createMutation = useMutation({
+    mutationFn: scheduleService.create,
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setShowCreateModal(false);
+      resetCreateForm();
+      scheduleReminderForItem(created);
+    },
+    onError: (err: any) => Alert.alert('Gagal', err.message ?? 'Gagal menambah jadwal'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await cancelReminderForItem(id);
+      return scheduleService.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: any) => Alert.alert('Gagal', err.message ?? 'Gagal menghapus jadwal'),
+  });
+
+  const handleCreateSubmit = () => {
+    if (!newLabel.trim() || !newTime.trim()) {
+      Alert.alert('Lengkapi dulu', 'Label dan waktu wajib diisi (format waktu: 08:00)');
+      return;
+    }
+    const typeOption = TYPE_OPTIONS.find((t) => t.type === newType);
+    createMutation.mutate({
+      type: newType,
+      label: newLabel.trim(),
+      detail: newDetail.trim() || undefined,
+      time: newTime.trim(),
+      scheduleDate: today,
+      colorScheme: typeOption?.colorScheme,
+    });
+  };
+
+  const handleLongPressItem = (item: ScheduleItem) => {
+    Alert.alert('Hapus jadwal', `Hapus "${item.label}" dari jadwal?`, [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: () => deleteMutation.mutate(item.id) },
+    ]);
+  };
 
   const done = items.filter((i: ScheduleItem) => i.done).length;
   const total = items.length;
@@ -104,6 +203,7 @@ export default function ScheduleScreen() {
       <ScreenHeader
         title="Jadwal harian"
         subtitle={todayLabel}
+<<<<<<< Updated upstream
         right={<View style={styles.headerActions}>
           <TouchableOpacity
             accessibilityLabel="Tambah aktivitas"
@@ -122,6 +222,28 @@ export default function ScheduleScreen() {
             <Text style={styles.aiBtnText}>AI</Text>
           </TouchableOpacity>
         </View>}
+=======
+        right={
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => setShowCreateModal(true)}
+              style={[styles.addBtn, { backgroundColor: colors.backgroundElement }]}
+              activeOpacity={0.8}
+              accessibilityLabel="Tambah jadwal"
+            >
+              <Icon name="add" size="sm" color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowAIModal(true)}
+              style={[styles.aiBtn, { backgroundColor: colors.primary }]}
+              activeOpacity={0.8}
+            >
+              <Icon name="sparkles" size="sm" color={colors.onPrimary} />
+              <Text style={styles.aiBtnText}>AI Generate</Text>
+            </TouchableOpacity>
+          </View>
+        }
+>>>>>>> Stashed changes
       >
         <View style={styles.progressBlock}>
           <View style={styles.progressRow}>
@@ -187,7 +309,11 @@ export default function ScheduleScreen() {
                   key={item.id}
                   item={item}
                   onToggle={() => toggleMutation.mutate(item.id)}
+<<<<<<< Updated upstream
                   onLongPress={() => confirmDelete(item)}
+=======
+                  onLongPress={() => handleLongPressItem(item)}
+>>>>>>> Stashed changes
                 />
               ))}
             </View>
@@ -311,6 +437,66 @@ export default function ScheduleScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal visible={showCreateModal} animationType="slide" transparent>
+        <Pressable style={styles.overlay} onPress={() => setShowCreateModal(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.backgroundCard }]} onPress={() => {}}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Tambah jadwal</Text>
+              <TouchableOpacity
+                onPress={() => setShowCreateModal(false)}
+                style={[styles.closeBtn, { backgroundColor: colors.backgroundElement }]}
+              >
+                <Icon name="close" size="sm" color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.createTypeRow}>
+              {TYPE_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.type}
+                  label={opt.label}
+                  icon={scheduleIcons[opt.type]}
+                  active={newType === opt.type}
+                  onPress={() => setNewType(opt.type)}
+                />
+              ))}
+            </View>
+
+            <TextField
+              label="Nama kegiatan"
+              value={newLabel}
+              onChangeText={setNewLabel}
+              placeholder="Minum obat tensi"
+              style={styles.createField}
+            />
+            <TextField
+              label="Detail (opsional)"
+              value={newDetail}
+              onChangeText={setNewDetail}
+              placeholder="1 tablet setelah makan"
+              style={styles.createField}
+            />
+            <TextField
+              label="Waktu (HH:MM)"
+              value={newTime}
+              onChangeText={setNewTime}
+              placeholder="08:00"
+              keyboardType="numbers-and-punctuation"
+              style={styles.createField}
+            />
+
+            <Button
+              label="Simpan jadwal"
+              onPress={handleCreateSubmit}
+              loading={createMutation.isPending}
+              fullWidth
+              style={styles.createField}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -327,6 +513,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: BorderRadius.full,
   },
   aiBtnText: { color: 'white', fontSize: FontSize.xs, fontFamily: Fonts.bold },
+  createTypeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  createField: { marginTop: Spacing.base },
   progressBlock: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, gap: 4 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   progressBarBg: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },

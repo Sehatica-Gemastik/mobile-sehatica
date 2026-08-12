@@ -21,7 +21,10 @@ export function ScheduleItemCard({ item, onToggle, onLongPress }: ScheduleItemCa
     <TouchableOpacity
       onPress={onToggle}
       onLongPress={onLongPress}
+<<<<<<< Updated upstream
       accessibilityHint={onLongPress ? 'Tekan lama untuk menghapus aktivitas' : undefined}
+=======
+>>>>>>> Stashed changes
       activeOpacity={0.7}
       style={[
         styles.container,
@@ -51,6 +54,13 @@ export function ScheduleItemCard({ item, onToggle, onLongPress }: ScheduleItemCa
           <Text style={[styles.detail, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.detail}
           </Text>
+        ) : null}
+        {item.verifStatus !== 'verified' ? (
+          <View style={[styles.verifBadge, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={[styles.verifBadgeText, { color: colors.textMuted }]}>
+              {item.verifStatus === 'revised' ? 'Direvisi dokter' : 'Belum diverifikasi'}
+            </Text>
+          </View>
         ) : null}
       </View>
 
@@ -92,6 +102,8 @@ const styles = StyleSheet.create({
   label: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   labelDone: { textDecorationLine: 'line-through' },
   detail: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  verifBadge: { alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 2 },
+  verifBadgeText: { fontSize: 9, fontFamily: Fonts.medium },
   right: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   time: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
   checkbox: {
