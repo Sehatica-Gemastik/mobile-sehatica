@@ -442,3 +442,9 @@ Isolation rule from RDSA plan still applies: **recommendation ≠ delivery**.
 ## Keamanan & privasi LLM
 
 Lihat [Heally_Privacy_Security.md](./Heally_Privacy_Security.md) untuk kebijakan de-identifikasi data sebelum dikirim ke provider LLM cloud.
+
+---
+
+## Jadwal harian, PTM & catatan
+
+Lihat [Heally_Daily_Schedule_PTM.md](./Heally_Daily_Schedule_PTM.md) untuk alur jadwal AI per hari, screening PTM, filter RDSA, dan CTA di chat.
