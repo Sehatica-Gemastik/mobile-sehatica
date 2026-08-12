@@ -104,6 +104,7 @@ export default function RootLayout() {
             <Stack.Screen name="daily-checkin" options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="record/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="account" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="chat/[doctorId]" options={{ headerShown: false, animation: 'slide_from_right' }} />
           </Stack>
         </AuthGuard>
       </SafeAreaProvider>

@@ -19,7 +19,7 @@ import {
 import { daysSince } from '@/features/lifestyle/derived';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows, BottomTabInset } from '@/constants/theme';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
-import { Icon } from '@/components/ui';
+import { Icon, InitialsAvatar } from '@/components/ui';
 import { ActionCardStack, ActionCardItem } from '@/components/dashboard/action-card-stack';
 import { ScheduleStack } from '@/components/dashboard/schedule-stack';
 
@@ -171,9 +171,11 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             style={styles.headerLeft}
           >
-            <View style={styles.avatar}>
-              <Icon name="person-outline" size="lg" color="#9CA3AF" />
-            </View>
+            <InitialsAvatar
+              initials={user?.avatarInitials}
+              name={user?.name}
+              size="lg"
+            />
             <View style={styles.headerText}>
               <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
                 {user?.name ?? 'Pengguna'}
@@ -240,14 +242,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     flex: 1,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.full,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerText: { flex: 1, gap: 2 },
   userName: { fontSize: FontSize.xl, fontFamily: Fonts.bold, letterSpacing: -0.4 },

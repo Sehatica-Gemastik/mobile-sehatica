@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
-import { Icon, Button, surfaceHeaderShell } from '@/components/ui';
+import { Icon, Button, InitialsAvatar, surfaceHeaderShell } from '@/components/ui';
 
 function formatLastActive() {
   return new Date().toLocaleDateString('id-ID', {
@@ -45,9 +45,11 @@ export default function AccountScreen() {
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.profileBlock}>
-            <View style={styles.avatarLarge}>
-              <Icon name="person-outline" size="lg" color="#9CA3AF" />
-            </View>
+            <InitialsAvatar
+              initials={user?.avatarInitials}
+              name={user?.name}
+              size="xl"
+            />
             <Text style={[styles.name, { color: colors.text }]}>{user?.name ?? 'Pengguna'}</Text>
           </View>
 
@@ -113,15 +115,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     paddingVertical: Spacing.lg,
-  },
-  avatarLarge: {
-    width: 96,
-    height: 96,
-    borderRadius: BorderRadius.full,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
   },
   name: {
     fontSize: FontSize.xl,

@@ -8,7 +8,6 @@ export type AddPartnerResult = {
 };
 
 export const doctorService = {
-  getAll: () => api.get<Doctor[]>(API_ENDPOINTS.doctors),
   getPartners: () => api.get<Doctor[]>(API_ENDPOINTS.doctorPartners),
   getById: (id: number) => api.get<Doctor>(API_ENDPOINTS.doctorDetail(id)),
   addPartnerByCode: (code: string) =>

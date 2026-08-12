@@ -103,15 +103,8 @@ export interface Doctor {
   name: string;
   email?: string;
   specialty: string;
-  feePerQna?: string;
-  rating: number;
-  reviewCount: number;
-  verifiedCount: number;
   isAvailable: boolean;
-  bio: string | null;
   avatarInitials: string;
-  colorScheme?: string;
-  isYours?: boolean;
 }
 
 // ── Dashboard ───────────────────────────────────────────────────────────────

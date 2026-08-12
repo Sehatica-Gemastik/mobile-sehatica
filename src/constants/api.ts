@@ -51,7 +51,7 @@ export const API_ENDPOINTS = {
   rdsaPendingAsks: '/rdsa/asks/pending',
   rdsaTriggerAsk: '/rdsa/asks/trigger',
   rdsaAckAsk: (askId: string) => `/rdsa/asks/${askId}/ack`,
-  doctors: '/doctors',
   doctorPartners: '/doctors/partners',
   doctorDetail: (id: number) => `/doctors/${id}`,
+  chatMessages: (doctorId: number) => `/chat/${doctorId}/messages`,
 } as const;
