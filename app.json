@@ -51,7 +51,15 @@
         }
       ],
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["central"],
+          "bluetoothAlwaysPermission": "Sehatica perlu Bluetooth untuk transfer rekam medis ke dokter partner."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
