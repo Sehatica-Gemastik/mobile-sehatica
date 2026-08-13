@@ -71,6 +71,13 @@ export const GradientColors = {
   end: '#FFF0EB',
 } as const;
 
+/** Dashboard hero — vibrant sky blue top → pale white bottom */
+export const HealyGradientColors = {
+  start: '#38BDF8',
+  middle: '#BAE6FD',
+  end: '#F0F9FF',
+} as const;
+
 export type ThemeColors = typeof Colors.light;
 export type ThemeColor = keyof ThemeColors;
 

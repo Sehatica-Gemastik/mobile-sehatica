@@ -3,7 +3,7 @@ import {
   Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { goBackOr } from '@/utils/go-back';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { AppScreen } from '@/components/screen-background';
@@ -15,7 +15,10 @@ import {
 import {
   EDUCATION_OPTIONS, INCOME_OPTIONS, RACE_OPTIONS, SEX_OPTIONS,
 } from '@/features/lifestyle/options';
-import { useLifestyleStore } from '@/store/lifestyle-store';
+import { authService } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth-store';
+import { identityInputToPayload, userToIdentityProfile } from '@/features/identity/user-identity';
+import { goBackOr } from '@/utils/go-back';
 
 type Draft = {
   age: string;
@@ -25,7 +28,8 @@ type Draft = {
   income_poverty_ratio: number | null;
 };
 
-function draftFromIdentity(identity: ReturnType<typeof useLifestyleStore.getState>['identity']): Draft {
+function draftFromUser(user: ReturnType<typeof useAuthStore.getState>['user']): Draft {
+  const identity = userToIdentityProfile(user);
   return {
     age: identity ? String(identity.age) : '',
     sex: identity?.sex ?? null,
@@ -40,9 +44,9 @@ export default function EditIdentityScreen() {
   const colors = Colors[scheme];
   const topPadding = useScreenTopPadding();
   const queryClient = useQueryClient();
-  const identity = useLifestyleStore((state) => state.identity);
-  const saveIdentity = useLifestyleStore((state) => state.saveIdentity);
-  const [draft, setDraft] = useState<Draft>(() => draftFromIdentity(identity));
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const [draft, setDraft] = useState<Draft>(() => draftFromUser(user));
   const [saving, setSaving] = useState(false);
 
   const ageValue = Number(draft.age);
@@ -64,13 +68,14 @@ export default function EditIdentityScreen() {
 
     setSaving(true);
     try {
-      await saveIdentity({
+      const updated = await authService.saveIdentity(identityInputToPayload({
         age: ageValue,
         sex: draft.sex,
         race_ethnicity: draft.race_ethnicity,
         education: draft.education,
         income_poverty_ratio: draft.income_poverty_ratio,
-      });
+      }));
+      setUser(updated);
       await queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
       goBackOr('/account');
     } catch (err: any) {
@@ -93,15 +98,11 @@ export default function EditIdentityScreen() {
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Text style={[styles.lead, { color: colors.textMuted }]}>
-            Data ini dipakai untuk menghitung skor risiko PTM. Perubahan disimpan di perangkat ini.
+            Data ini dipakai untuk menghitung skor risiko PTM dan disimpan di akun kamu.
           </Text>
 
           <View style={styles.block}>
-            <QuestionCopy
-              kicker="Data diri"
-              title="Berapa usia kamu?"
-              subtitle="Model ini untuk dewasa, jadi usia minimal 18 tahun."
-            />
+            <QuestionCopy kicker="Data diri" title="Berapa usia kamu?" subtitle="Usia minimal 18 tahun." />
             <BigNumberField
               value={draft.age}
               onChangeText={(age) => setDraft((current) => ({ ...current, age: age.replace(/[^0-9]/g, '') }))}
@@ -113,55 +114,25 @@ export default function EditIdentityScreen() {
 
           <View style={styles.block}>
             <QuestionCopy kicker="Data diri" title="Jenis kelamin kamu?" />
-            <OptionList
-              options={SEX_OPTIONS}
-              value={draft.sex}
-              onChange={(sex) => setDraft((current) => ({ ...current, sex }))}
-            />
+            <OptionList options={SEX_OPTIONS} value={draft.sex} onChange={(sex) => setDraft((c) => ({ ...c, sex }))} layout="stack" />
           </View>
 
           <View style={styles.block}>
-            <QuestionCopy
-              kicker="Data diri"
-              title="Latar belakang yang paling mendekati?"
-              subtitle="Pilihan ini mengikuti kategori data penelitian, bukan identitas formal."
-            />
-            <OptionList
-              options={RACE_OPTIONS}
-              value={draft.race_ethnicity}
-              onChange={(race_ethnicity) => setDraft((current) => ({ ...current, race_ethnicity }))}
-            />
+            <QuestionCopy kicker="Data diri" title="Latar belakang yang paling mendekati?" />
+            <OptionList options={RACE_OPTIONS} value={draft.race_ethnicity} onChange={(v) => setDraft((c) => ({ ...c, race_ethnicity: v }))} />
           </View>
 
           <View style={styles.block}>
             <QuestionCopy kicker="Data diri" title="Pendidikan terakhir?" />
-            <OptionList
-              options={EDUCATION_OPTIONS}
-              value={draft.education}
-              onChange={(education) => setDraft((current) => ({ ...current, education }))}
-            />
+            <OptionList options={EDUCATION_OPTIONS} value={draft.education} onChange={(v) => setDraft((c) => ({ ...c, education: v }))} />
           </View>
 
           <View style={styles.block}>
-            <QuestionCopy
-              kicker="Data diri"
-              title="Bagaimana kondisi ekonomi rumah tangga kamu?"
-              subtitle="Perkiraan saja, tidak perlu angka penghasilan."
-            />
-            <OptionList
-              options={INCOME_OPTIONS}
-              value={draft.income_poverty_ratio}
-              onChange={(income_poverty_ratio) => setDraft((current) => ({ ...current, income_poverty_ratio }))}
-            />
+            <QuestionCopy kicker="Data diri" title="Kondisi ekonomi rumah tangga?" />
+            <OptionList options={INCOME_OPTIONS} value={draft.income_poverty_ratio} onChange={(v) => setDraft((c) => ({ ...c, income_poverty_ratio: v }))} layout="stack" />
           </View>
 
-          <Button
-            label="Simpan perubahan"
-            onPress={() => void save()}
-            loading={saving}
-            disabled={!canSave}
-            fullWidth
-          />
+          <Button label="Simpan perubahan" onPress={() => void save()} loading={saving} disabled={!canSave} fullWidth />
         </ScrollView>
       </SafeAreaView>
     </AppScreen>
@@ -178,25 +149,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: FontSize.md,
-    fontFamily: Fonts.bold,
-  },
-  content: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.xl,
-  },
-  lead: {
-    fontSize: FontSize.xs,
-    fontFamily: Fonts.regular,
-    lineHeight: 18,
-  },
-  block: { gap: Spacing.lg },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: FontSize.md, fontFamily: Fonts.bold },
+  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl, gap: Spacing.xl },
+  lead: { fontSize: FontSize.xs, fontFamily: Fonts.regular, lineHeight: 18, textAlign: 'center' },
+  block: { gap: Spacing.lg, width: '100%' },
 });

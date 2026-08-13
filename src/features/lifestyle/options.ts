@@ -1,62 +1,67 @@
+import type { IconName } from '@/components/ui/icon';
+
 export type ChoiceOption = {
   value: number;
   label: string;
   hint?: string;
+  icon?: IconName;
+  iconColor?: string;
+  iconBg?: string;
 };
 
 export const SEX_OPTIONS: ChoiceOption[] = [
-  { value: 1, label: 'Laki-laki' },
-  { value: 2, label: 'Perempuan' },
+  { value: 1, label: 'Laki-laki', icon: 'male-outline', iconColor: '#0284C7', iconBg: '#E0F2FE' },
+  { value: 2, label: 'Perempuan', icon: 'female-outline', iconColor: '#DB2777', iconBg: '#FCE7F3' },
 ];
 
 export const RACE_OPTIONS: ChoiceOption[] = [
-  { value: 1, label: 'Hispanik / Latino (Meksiko)' },
-  { value: 2, label: 'Hispanik / Latino (lainnya)' },
-  { value: 3, label: 'Kulit putih' },
-  { value: 4, label: 'Kulit hitam / Afrika' },
-  { value: 6, label: 'Asia' },
-  { value: 7, label: 'Lainnya / campuran' },
+  { value: 1, label: 'Hispanik / Latino (Meksiko)', icon: 'earth-outline', iconColor: '#EA580C', iconBg: '#FFEDD5' },
+  { value: 2, label: 'Hispanik / Latino (lainnya)', icon: 'globe-outline', iconColor: '#CA8A04', iconBg: '#FEF9C3' },
+  { value: 3, label: 'Kulit putih', icon: 'person-outline', iconColor: '#64748B', iconBg: '#F1F5F9' },
+  { value: 4, label: 'Kulit hitam / Afrika', icon: 'people-outline', iconColor: '#7C3AED', iconBg: '#EDE9FE' },
+  { value: 6, label: 'Asia', icon: 'leaf-outline', iconColor: '#059669', iconBg: '#D1FAE5' },
+  { value: 7, label: 'Lainnya / campuran', icon: 'sparkles-outline', iconColor: '#0D9488', iconBg: '#CCFBF1' },
 ];
 
 export const EDUCATION_OPTIONS: ChoiceOption[] = [
-  { value: 1, label: 'Tidak tamat SD' },
-  { value: 2, label: 'SMP / sederajat' },
-  { value: 3, label: 'SMA / sederajat' },
-  { value: 4, label: 'Diploma / kuliah sebagian' },
-  { value: 5, label: 'Sarjana atau lebih' },
+  { value: 1, label: 'Tidak tamat SD', icon: 'book-outline', iconColor: '#DC2626', iconBg: '#FEE2E2' },
+  { value: 2, label: 'SMP / sederajat', icon: 'school-outline', iconColor: '#D97706', iconBg: '#FFEDD5' },
+  { value: 3, label: 'SMA / sederajat', icon: 'library-outline', iconColor: '#2563EB', iconBg: '#DBEAFE' },
+  { value: 4, label: 'Diploma / kuliah sebagian', icon: 'reader-outline', iconColor: '#7C3AED', iconBg: '#EDE9FE' },
+  { value: 5, label: 'Sarjana atau lebih', icon: 'ribbon-outline', iconColor: '#0D9488', iconBg: '#CCFBF1' },
 ];
 
 export const INCOME_OPTIONS: ChoiceOption[] = [
-  { value: 0.5, label: 'Sangat rendah', hint: 'Jauh di bawah kebutuhan sehari-hari' },
-  { value: 1, label: 'Rendah', hint: 'Sekitar garis kebutuhan dasar' },
-  { value: 2, label: 'Cukup', hint: 'Kebutuhan dasar terpenuhi' },
-  { value: 3, label: 'Menengah', hint: 'Ada ruang untuk kebutuhan lain' },
-  { value: 4, label: 'Di atas rata-rata' },
-  { value: 5, label: 'Tinggi' },
+  { value: 0.5, label: 'Sangat rendah', hint: 'Jauh di bawah kebutuhan sehari-hari', icon: 'trending-down-outline', iconColor: '#DC2626', iconBg: '#FEE2E2' },
+  { value: 1, label: 'Rendah', hint: 'Sekitar garis kebutuhan dasar', icon: 'wallet-outline', iconColor: '#EA580C', iconBg: '#FFEDD5' },
+  { value: 2, label: 'Cukup', hint: 'Kebutuhan dasar terpenuhi', icon: 'cash-outline', iconColor: '#CA8A04', iconBg: '#FEF9C3' },
+  { value: 3, label: 'Menengah', hint: 'Ada ruang untuk kebutuhan lain', icon: 'card-outline', iconColor: '#2563EB', iconBg: '#DBEAFE' },
+  { value: 4, label: 'Di atas rata-rata', icon: 'trending-up-outline', iconColor: '#059669', iconBg: '#D1FAE5' },
+  { value: 5, label: 'Tinggi', icon: 'diamond-outline', iconColor: '#0D9488', iconBg: '#CCFBF1' },
 ];
 
 export const YES_NO_OPTIONS: ChoiceOption[] = [
-  { value: 1, label: 'Ya' },
-  { value: 0, label: 'Tidak' },
+  { value: 1, label: 'Ya', icon: 'checkmark-circle-outline', iconColor: '#059669', iconBg: '#D1FAE5' },
+  { value: 0, label: 'Tidak', icon: 'close-circle-outline', iconColor: '#64748B', iconBg: '#F1F5F9' },
 ];
 
 export const ALCOHOL_FREQUENCY_OPTIONS: ChoiceOption[] = [
-  { value: 1, label: 'Setiap hari' },
-  { value: 3, label: '3-4 kali seminggu' },
-  { value: 4, label: '2 kali seminggu' },
-  { value: 5, label: 'Seminggu sekali' },
-  { value: 6, label: '2-3 kali sebulan' },
-  { value: 7, label: 'Sebulan sekali' },
-  { value: 10, label: 'Jarang / 1-2 kali setahun' },
-  { value: 0, label: 'Tidak dalam setahun terakhir' },
+  { value: 1, label: 'Setiap hari', icon: 'calendar-outline', iconColor: '#DC2626', iconBg: '#FEE2E2' },
+  { value: 3, label: '3-4 kali seminggu', icon: 'beer-outline', iconColor: '#EA580C', iconBg: '#FFEDD5' },
+  { value: 4, label: '2 kali seminggu', icon: 'wine-outline', iconColor: '#D97706', iconBg: '#FEF3C7' },
+  { value: 5, label: 'Seminggu sekali', icon: 'time-outline', iconColor: '#2563EB', iconBg: '#DBEAFE' },
+  { value: 6, label: '2-3 kali sebulan', icon: 'calendar-number-outline', iconColor: '#7C3AED', iconBg: '#EDE9FE' },
+  { value: 7, label: 'Sebulan sekali', icon: 'moon-outline', iconColor: '#64748B', iconBg: '#F1F5F9' },
+  { value: 10, label: 'Jarang / 1-2 kali setahun', icon: 'leaf-outline', iconColor: '#059669', iconBg: '#D1FAE5' },
+  { value: 0, label: 'Tidak dalam setahun terakhir', icon: 'ban-outline', iconColor: '#0D9488', iconBg: '#CCFBF1' },
 ];
 
 export const BINGE_FREQUENCY_OPTIONS: ChoiceOption[] = [
-  { value: 0, label: 'Tidak pernah' },
-  { value: 7, label: 'Sebulan sekali atau kurang' },
-  { value: 5, label: 'Seminggu sekali' },
-  { value: 3, label: 'Beberapa kali seminggu' },
-  { value: 1, label: 'Hampir setiap hari' },
+  { value: 0, label: 'Tidak pernah', icon: 'shield-checkmark-outline', iconColor: '#059669', iconBg: '#D1FAE5' },
+  { value: 7, label: 'Sebulan sekali atau kurang', icon: 'calendar-outline', iconColor: '#2563EB', iconBg: '#DBEAFE' },
+  { value: 5, label: 'Seminggu sekali', icon: 'alert-circle-outline', iconColor: '#D97706', iconBg: '#FEF3C7' },
+  { value: 3, label: 'Beberapa kali seminggu', icon: 'warning-outline', iconColor: '#EA580C', iconBg: '#FFEDD5' },
+  { value: 1, label: 'Hampir setiap hari', icon: 'flame-outline', iconColor: '#DC2626', iconBg: '#FEE2E2' },
 ];
 
 export const DAY_CHIPS = [1, 2, 3, 4, 5, 6, 7];

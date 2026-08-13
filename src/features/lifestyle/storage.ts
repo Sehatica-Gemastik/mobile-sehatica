@@ -6,7 +6,6 @@ const STORAGE_KEY = 'sehatica_lifestyle_profile';
 const FILE_NAME = 'lifestyle-profile.json';
 
 const EMPTY_PROFILE: LifestyleProfile = {
-  identity: null,
   weekly: null,
   daily: null,
 };
@@ -20,14 +19,16 @@ export async function loadLifestyleProfile(): Promise<LifestyleProfile> {
     if (Platform.OS === 'web') {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return EMPTY_PROFILE;
-      return { ...EMPTY_PROFILE, ...JSON.parse(raw) } as LifestyleProfile;
+      const parsed = JSON.parse(raw) as Partial<LifestyleProfile>;
+      return { weekly: parsed.weekly ?? null, daily: parsed.daily ?? null };
     }
 
     const uri = fileUri();
     const info = await FileSystem.getInfoAsync(uri);
     if (!info.exists) return EMPTY_PROFILE;
     const raw = await FileSystem.readAsStringAsync(uri);
-    return { ...EMPTY_PROFILE, ...JSON.parse(raw) } as LifestyleProfile;
+    const parsed = JSON.parse(raw) as Partial<LifestyleProfile>;
+    return { weekly: parsed.weekly ?? null, daily: parsed.daily ?? null };
   } catch (err) {
     console.error('Failed to load lifestyle profile:', err);
     return EMPTY_PROFILE;

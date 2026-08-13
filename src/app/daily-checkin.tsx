@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import {
   BigNumberField, ChipRow, OptionList, QuestionCopy, QuestionnaireShell,
@@ -113,6 +114,7 @@ function activityComplete(draft: DailyDraft, step: ActivityStep): boolean {
 }
 
 export default function DailyCheckinScreen() {
+  const queryClient = useQueryClient();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const latest = useLifestyleStore((s) => s.daily);
@@ -144,6 +146,13 @@ export default function DailyCheckinScreen() {
     setDraft((current) => ({ ...current, ...partial }));
   };
 
+  const patchMeals = (meals: DailyDraft['meals'] | ((prev: DailyDraft['meals']) => DailyDraft['meals'])) => {
+    setDraft((current) => ({
+      ...current,
+      meals: typeof meals === 'function' ? meals(current.meals) : meals,
+    }));
+  };
+
   const finish = async () => {
     const alcohol = normalizeAlcohol(draft);
     const derived = deriveActivity({
@@ -155,6 +164,20 @@ export default function DailyCheckinScreen() {
       moderate_recreation: draft.moderate_recreation === 1 ? 1 : 0,
       sedentary_hours: Math.max(0, draft.sedentary_hours),
     });
+
+    const nutrition = resolveDailyNutrition(draft);
+    if (nutrition.calories_day1 < 0) {
+      Alert.alert(
+        'Makanan belum lengkap',
+        'Tambah minimal 1 makanan, atau isi angka nutrisi manual, lalu simpan lagi.',
+      );
+      return;
+    }
+
+    if (__DEV__) {
+      console.log('[daily-save] meals:', draft.meals.length, draft.meals.map((m) => m.foodId));
+      console.log('[daily-save] nutrition:', nutrition);
+    }
 
     setSaving(true);
     try {
@@ -175,12 +198,13 @@ export default function DailyCheckinScreen() {
         moderate_recreation: draft.moderate_recreation === 1 ? 1 : 0,
         moderate_recreation_days: draft.moderate_recreation === 1 ? draft.moderate_recreation_days : 0,
         moderate_recreation_minutes: draft.moderate_recreation === 1 ? draft.moderate_recreation_minutes : 0,
-        ...resolveDailyNutrition(draft),
+        ...nutrition,
         meals: draft.meals,
         nutritionManual: draft.nutritionManual,
         ...alcohol,
         ...derived,
       });
+      queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
       router.back();
     } catch (err: any) {
       Alert.alert('Gagal', err.message ?? 'Kuisioner belum tersimpan.');
@@ -294,7 +318,7 @@ export default function DailyCheckinScreen() {
             meals={draft.meals}
             nutrition={draft}
             nutritionManual={draft.nutritionManual}
-            onChangeMeals={(meals) => patch({ meals })}
+            onChangeMeals={patchMeals}
             onChangeNutrition={(nutrition) => patch(nutrition)}
             onToggleManual={(enabled, prefill) => {
               if (enabled) {

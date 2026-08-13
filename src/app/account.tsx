@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { goBackOr } from '@/utils/go-back';
 import { useAuthStore } from '@/store/auth-store';
-import { useLifestyleStore } from '@/store/lifestyle-store';
+import { userToIdentityProfile } from '@/features/identity/user-identity';
 import { formatIdentityRows, formatIdentityUpdatedAt } from '@/features/lifestyle/identity-display';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { AppScreen } from '@/components/screen-background';
@@ -29,7 +29,7 @@ export default function AccountScreen() {
   const colors = Colors[scheme];
   const topPadding = useScreenTopPadding();
   const { user, clearAuth } = useAuthStore();
-  const identity = useLifestyleStore((state) => state.identity);
+  const identity = userToIdentityProfile(user);
   const identityRows = formatIdentityRows(identity);
   const identityUpdatedAt = formatIdentityUpdatedAt(identity?.completedAt);
 

@@ -86,7 +86,6 @@ export type DailyCheckin = Omit<DailyDraft, 'sedentary_hours'> & DerivedActivity
 };
 
 export type LifestyleProfile = {
-  identity: IdentityProfile | null;
   weekly: WeeklyCheckin | null;
   daily: DailyCheckin | null;
 };

@@ -15,9 +15,26 @@ function resolveDevLanHost(): string | null {
 
 const getBaseUrl = () => {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
-
   const lanHost = resolveDevLanHost();
+  const isLocalhostUrl = (url: string) => /\/\/(localhost|127\.0\.0\.1)(:|\/)/.test(url);
+
+  if (fromEnv) {
+    const normalized = fromEnv.replace(/\/$/, '');
+
+    if (Platform.OS === 'android' && isLocalhostUrl(normalized)) {
+      if (process.env.EXPO_PUBLIC_ANDROID_USB === '1') {
+        return normalized;
+      }
+      return normalized.replace(/\/\/(localhost|127\.0\.0\.1)/, '//10.0.2.2');
+    }
+
+    if (lanHost && isLocalhostUrl(normalized)) {
+      return normalized.replace(/\/\/(localhost|127\.0\.0\.1)/, `//${lanHost}`);
+    }
+
+    return normalized;
+  }
+
   if (lanHost) {
     return `http://${lanHost}:3000/api/v1`;
   }

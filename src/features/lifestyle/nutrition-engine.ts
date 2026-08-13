@@ -83,6 +83,31 @@ export function resolveDailyNutrition(input: {
   };
 }
 
+/** Fix daily records that lost calorie totals but still have meals. */
+export function hydrateDailyNutrition<T extends {
+  meals?: MealEntry[];
+  nutritionManual?: boolean;
+  calories_day1: number;
+  protein_g_day1: number;
+  carbohydrate_g_day1: number;
+  sugar_g_day1: number;
+  total_fat_g_day1: number;
+  saturated_fat_g_day1: number;
+  sodium_mg_day1: number;
+  fiber_g_day1: number;
+  cholesterol_mg_day1: number;
+  alcohol_g_day1: number;
+}>(daily: T): T {
+  if (daily.calories_day1 >= 0) return daily;
+  const meals = daily.meals ?? [];
+  if (meals.length === 0) return daily;
+  return {
+    ...daily,
+    ...sumMealNutrition(meals),
+    nutritionManual: false,
+  };
+}
+
 export function isNutritionReady(input: {
   meals: MealEntry[];
   nutritionManual: boolean;

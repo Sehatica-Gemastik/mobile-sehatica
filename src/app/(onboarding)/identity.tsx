@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { Icon } from '@/components/ui';
 import {
@@ -9,8 +10,9 @@ import {
 import {
   EDUCATION_OPTIONS, INCOME_OPTIONS, RACE_OPTIONS, SEX_OPTIONS,
 } from '@/features/lifestyle/options';
-import { useLifestyleStore } from '@/store/lifestyle-store';
+import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth-store';
+import { identityInputToPayload } from '@/features/identity/user-identity';
 
 type Draft = {
   age: string;
@@ -25,8 +27,8 @@ const TOTAL = 6;
 export default function IdentityScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const { saveIdentity } = useLifestyleStore();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setUser = useAuthStore((s) => s.setUser);
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Draft>({
@@ -57,14 +59,16 @@ export default function IdentityScreen() {
     }
     setSaving(true);
     try {
-      await saveIdentity({
+      const user = await authService.saveIdentity(identityInputToPayload({
         age: ageValue,
         sex: draft.sex,
         race_ethnicity: draft.race_ethnicity,
         education: draft.education,
         income_poverty_ratio: draft.income_poverty_ratio,
-      });
-      router.replace(isAuthenticated ? '/(tabs)' : '/(auth)/login');
+      }));
+      setUser(user);
+      queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
+      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Gagal', err.message ?? 'Data diri belum tersimpan.');
     } finally {
@@ -80,12 +84,20 @@ export default function IdentityScreen() {
     setStep((current) => current + 1);
   };
 
+  const back = () => {
+    if (step > 0) setStep((current) => current - 1);
+  };
+
   return (
     <QuestionnaireShell
       progress={(step + 1) / TOTAL}
+      totalSteps={TOTAL}
+      currentStep={step + 1}
       stepLabel={`${step + 1} / ${TOTAL}`}
-      onBack={step > 0 ? () => setStep((current) => current - 1) : undefined}
-      footerLabel={step === 0 ? 'Mulai' : step === TOTAL - 1 ? 'Simpan dan lanjut' : 'Lanjut'}
+      onBack={step > 0 ? back : undefined}
+      footerLabel={step === 0 ? 'Mulai' : step === TOTAL - 1 ? 'Selesai' : 'Lanjut'}
+      secondaryFooterLabel={step > 0 && step < TOTAL - 1 ? 'Kembali' : undefined}
+      onSecondaryFooterPress={step > 0 && step < TOTAL - 1 ? back : undefined}
       onFooterPress={next}
       footerDisabled={!canContinue}
       footerLoading={saving}
@@ -93,12 +105,15 @@ export default function IdentityScreen() {
       {step === 0 ? (
         <View style={styles.welcome}>
           <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
-            <Icon name="leaf-outline" size="lg" color={colors.primary} />
+            <Icon name="person-circle-outline" size="lg" color={colors.primary} />
           </View>
           <QuestionCopy
-            title="Sebelum masuk, kenalan dulu"
-            subtitle="Lima pertanyaan singkat tentang dirimu. Cukup isi sekali, nanti bisa dipakai untuk pemantauan kesehatan."
+            title="Kenalan dulu, yuk"
+            subtitle="Beberapa pertanyaan singkat supaya kami bisa hitung risiko kesehatan dan rekomendasi yang pas untukmu."
           />
+          <Text style={[styles.note, { color: colors.textMuted }]}>
+            Data disimpan aman di akun kamu.
+          </Text>
         </View>
       ) : null}
 
@@ -126,6 +141,7 @@ export default function IdentityScreen() {
             options={SEX_OPTIONS}
             value={draft.sex}
             onChange={(sex) => setDraft((current) => ({ ...current, sex }))}
+            layout="stack"
           />
         </View>
       ) : null}
@@ -167,10 +183,8 @@ export default function IdentityScreen() {
             options={INCOME_OPTIONS}
             value={draft.income_poverty_ratio}
             onChange={(income_poverty_ratio) => setDraft((current) => ({ ...current, income_poverty_ratio }))}
+            layout="stack"
           />
-          <Text style={[styles.note, { color: colors.textMuted }]}>
-            Jawaban disimpan di perangkat ini.
-          </Text>
         </View>
       ) : null}
     </QuestionnaireShell>
@@ -178,11 +192,11 @@ export default function IdentityScreen() {
 }
 
 const styles = StyleSheet.create({
-  welcome: { gap: Spacing.xl, paddingTop: Spacing.xxl },
+  welcome: { gap: Spacing.xl, paddingTop: Spacing.xxl, alignItems: 'center' },
   logo: {
-    width: 64, height: 64, borderRadius: BorderRadius.lg,
+    width: 72, height: 72, borderRadius: BorderRadius.xl,
     alignItems: 'center', justifyContent: 'center',
   },
-  block: { gap: Spacing.xl },
-  note: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  block: { gap: Spacing.xl, width: '100%' },
+  note: { fontSize: FontSize.xs, fontFamily: Fonts.regular, textAlign: 'center' },
 });
