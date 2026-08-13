@@ -1,10 +1,9 @@
 import React from 'react';
 import {
   TouchableOpacity, Text, StyleSheet, ActivityIndicator,
-  ViewStyle, TextStyle, Platform,
- useColorScheme } from 'react-native';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset } from '@/constants/theme';
-
+  ViewStyle, TextStyle, Platform, useColorScheme,
+} from 'react-native';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset, Shadows } from '@/constants/theme';
 import { Icon, IconName } from './icon';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
@@ -29,38 +28,54 @@ export function Button({
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const muted = disabled || loading;
+  const fg = isPrimary ? colors.onPrimary : isSecondary ? colors.primary : colors.textSecondary;
 
-  const bg = isPrimary
-    ? colors.primary
-    : isSecondary
-      ? colors.backgroundElement
-      : 'transparent';
-  const fg = isPrimary ? colors.onPrimary : colors.text;
+  const content = loading ? (
+    <>
+      <ActivityIndicator color={fg} />
+      <Text style={[styles.label, { color: fg }]}>{loadingLabel}</Text>
+    </>
+  ) : (
+    <>
+      {icon ? <Icon name={icon} size="sm" color={fg} /> : null}
+      <Text style={[styles.label, { color: fg }]}>{label}</Text>
+    </>
+  );
+
+  if (isPrimary) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={muted}
+        activeOpacity={0.82}
+        style={[
+          styles.base,
+          Shadows.sm,
+          { backgroundColor: colors.primary, opacity: muted ? 0.55 : 1 },
+          fullWidth && { alignSelf: 'stretch' },
+          style,
+        ]}
+      >
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  const bg = isSecondary ? colors.primaryLight : 'transparent';
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={muted}
-      activeOpacity={0.75}
+      activeOpacity={0.82}
       style={[
         styles.base,
         { backgroundColor: bg, opacity: muted ? 0.55 : 1 },
-        isSecondary && { borderWidth: 1, borderColor: colors.border },
         fullWidth && { alignSelf: 'stretch' },
         style,
       ]}
     >
-      {loading ? (
-        <>
-          <ActivityIndicator color={fg} />
-          <Text style={[styles.label, { color: fg }]}>{loadingLabel}</Text>
-        </>
-      ) : (
-        <>
-          {icon ? <Icon name={icon} size="sm" color={fg} /> : null}
-          <Text style={[styles.label, { color: fg }]}>{label}</Text>
-        </>
-      )}
+      {content}
     </TouchableOpacity>
   );
 }
@@ -73,11 +88,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingVertical: 14,
     paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
     ...(Platform.OS === 'web' ? nativeReset : null),
   },
   label: {
     fontSize: FontSize.sm,
-    fontFamily: Fonts.bold,
+    fontFamily: Fonts.semibold,
   } as TextStyle,
 });

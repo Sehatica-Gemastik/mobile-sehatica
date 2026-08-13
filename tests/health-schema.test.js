@@ -8,18 +8,24 @@ import {
   MIGRATION_3_TO_4,
   MIGRATION_4_TO_5,
   MIGRATION_5_TO_6,
+  MIGRATION_6_TO_7,
 } from '../src/storage/health-schema';
+
+function applyAllMigrations(database) {
+  database.exec(MIGRATION_0_TO_1);
+  database.exec(MIGRATION_1_TO_2);
+  database.exec(MIGRATION_2_TO_3);
+  database.exec(MIGRATION_3_TO_4);
+  database.exec(MIGRATION_4_TO_5);
+  database.exec(MIGRATION_5_TO_6);
+  database.exec(MIGRATION_6_TO_7);
+  database.exec(`PRAGMA user_version = ${HEALTH_DATABASE_VERSION}`);
+}
 
 describe('local health schema', () => {
   test('creates an owner-scoped record table with enforced record types', () => {
     const database = new Database(':memory:');
-    database.exec(MIGRATION_0_TO_1);
-    database.exec(MIGRATION_1_TO_2);
-    database.exec(MIGRATION_2_TO_3);
-    database.exec(MIGRATION_3_TO_4);
-    database.exec(MIGRATION_4_TO_5);
-    database.exec(MIGRATION_5_TO_6);
-    database.exec(`PRAGMA user_version = ${HEALTH_DATABASE_VERSION}`);
+    applyAllMigrations(database);
 
     database.query(`
       INSERT INTO medical_records (
@@ -31,7 +37,7 @@ describe('local health schema', () => {
       'SELECT owner_user_id, title FROM medical_records WHERE owner_user_id = ?'
     ).get(7);
     expect(record).toEqual({ owner_user_id: 7, title: 'Catatan tekanan darah' });
-    expect(database.query('PRAGMA user_version').get()).toEqual({ user_version: 6 });
+    expect(database.query('PRAGMA user_version').get()).toEqual({ user_version: 7 });
 
     database.query(
       'UPDATE medical_records SET file_data = ?, file_mime = ? WHERE owner_user_id = ?'
@@ -89,20 +95,13 @@ describe('local health schema', () => {
     database.close();
   });
 
-  test('stores bounded local Heally history with safety metadata', () => {
+  test('drops legacy chat tables after migration 7', () => {
     const database = new Database(':memory:');
-    database.exec(MIGRATION_3_TO_4);
-    const insert = database.query(`
-      INSERT INTO heally_messages (
-        owner_user_id, role, content, needs_verif, safety_level, safety_reasons_json, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    insert.run(7, 'assistant', 'Konsultasikan perubahan dosis dengan dokter.', 1, 'review', '["medication_or_diagnostic_advice"]', 'now');
+    applyAllMigrations(database);
 
     expect(database.query(
-      'SELECT role, safety_level, needs_verif FROM heally_messages WHERE owner_user_id = ?'
-    ).all(7)).toEqual([{ role: 'assistant', safety_level: 'review', needs_verif: 1 }]);
-    expect(() => insert.run(7, 'system', 'Tidak valid', 0, 'general', '[]', 'now')).toThrow();
+      "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'heally_%'"
+    ).all()).toEqual([]);
 
     database.close();
   });

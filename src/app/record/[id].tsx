@@ -3,18 +3,19 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, Alert, Image, useColorScheme,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { File, Paths } from 'expo-file-system';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { recordsService } from '@/services/records.service';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { Button, Icon } from '@/components/ui';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
+import { Button, Icon, surfaceHeaderShell } from '@/components/ui';
+import { AppScreen } from '@/components/screen-background';
+import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { documentKindLabel, parseStandardMedicalRecord } from '@/utils/parse-medical-record';
 
 function SectionBlock({ title, children, colors }: { title: string; children: React.ReactNode; colors: typeof Colors.light }) {
   return (
-    <View style={[styles.section, { borderColor: colors.border, backgroundColor: colors.backgroundCard }]}>
+    <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
       {children}
     </View>
@@ -26,6 +27,7 @@ export default function RecordDetailScreen() {
   const recordId = Number(id);
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
+  const topPadding = useScreenTopPadding();
 
   const { data: record, isLoading, error } = useQuery({
     queryKey: ['record', recordId],
@@ -54,33 +56,33 @@ export default function RecordDetailScreen() {
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
-  const exportImageMutation = useMutation({
-    mutationFn: () => recordsService.exportOriginalImage(recordId),
+  const exportPdfMutation = useMutation({
+    mutationFn: () => recordsService.exportOriginalPdf(recordId),
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
   if (isLoading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <AppScreen style={styles.center}>
         <ActivityIndicator color={colors.primary} />
-      </View>
+      </AppScreen>
     );
   }
 
   if (error || !record) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <AppScreen style={styles.center}>
         <Text style={{ color: colors.textSecondary }}>Rekam medis tidak ditemukan</Text>
         <Button label="Kembali" onPress={() => router.back()} style={{ marginTop: 16 }} />
-      </View>
+      </AppScreen>
     );
   }
 
   const standard = parseStandardMedicalRecord(record.content);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <SafeAreaView edges={['top']} style={[styles.header, { borderBottomColor: colors.border }]}>
+    <AppScreen style={styles.container}>
+      <View style={[styles.header, surfaceHeaderShell(colors), { paddingTop: topPadding }]}>
         <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundElement }]}>
           <Icon name="chevron-back" size="sm" color={colors.text} />
         </TouchableOpacity>
@@ -88,7 +90,7 @@ export default function RecordDetailScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{record.title}</Text>
           <Text style={[styles.headerSub, { color: colors.textMuted }]}>Detail rekam medis</Text>
         </View>
-      </SafeAreaView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {standard ? (
@@ -105,7 +107,7 @@ export default function RecordDetailScreen() {
         ) : null}
 
         {isPdfFile ? (
-          <View style={[styles.pdfCard, { borderColor: colors.border, backgroundColor: colors.backgroundCard }]}>
+          <View style={[styles.pdfCard, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
             <Icon name="document-text-outline" size="lg" color={colors.primary} />
             <Text style={[styles.pdfTitle, { color: colors.text }]}>Dokumen PDF tersimpan</Text>
             <Text style={[styles.pdfHint, { color: colors.textMuted }]}>
@@ -179,19 +181,19 @@ export default function RecordDetailScreen() {
             loadingLabel="Menyiapkan..."
             fullWidth
           />
-          {fileBlob ? (
+          {fileBlob && isPdfFile ? (
             <Button
-              label="Unduh foto asli"
+              label="Unduh PDF asli"
               variant="secondary"
-              onPress={() => exportImageMutation.mutate()}
-              loading={exportImageMutation.isPending}
+              onPress={() => exportPdfMutation.mutate()}
+              loading={exportPdfMutation.isPending}
               loadingLabel="Menyiapkan..."
               fullWidth
             />
           ) : null}
         </View>
       </ScrollView>
-    </View>
+    </AppScreen>
   );
 }
 
@@ -200,8 +202,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.lg,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: BorderRadius.full,
@@ -220,15 +221,14 @@ const styles = StyleSheet.create({
     width: '100%', height: 220, borderRadius: BorderRadius.md, backgroundColor: '#111',
   },
   pdfCard: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     alignItems: 'center',
     gap: 8,
   },
   pdfTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   pdfHint: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
-  section: { borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.base, gap: 8 },
+  section: { borderRadius: BorderRadius.xl, padding: Spacing.base, gap: 8 },
   sectionTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   body: { fontSize: FontSize.sm, lineHeight: 21, fontFamily: Fonts.regular },
   meta: { fontSize: FontSize.xs, fontFamily: Fonts.regular },

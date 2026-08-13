@@ -29,18 +29,11 @@ export type DailySyncPayload = {
     done: boolean;
     isAiGenerated?: boolean;
   }>;
-  /** when true, Heally may send schedule confirmation chat (not auto-generate) */
-  checkResume?: boolean;
 };
 
 export type DailySyncResponse = {
   date: string;
   syncedAt: string;
-  wasPendingSchedule?: boolean;
-  confirmPrompt: {
-    sent: boolean;
-    messageId: number;
-  } | null;
 };
 
 function ownerUserId(): number {
@@ -87,12 +80,9 @@ export async function buildDailySyncPayload(date = localDateKey()): Promise<Dail
 }
 
 export const dailySyncService = {
-  sync: async (date = localDateKey(), options?: { checkResume?: boolean }): Promise<DailySyncResponse> => {
+  sync: async (date = localDateKey()): Promise<DailySyncResponse> => {
     const payload = await buildDailySyncPayload(date);
-    return api.post<DailySyncResponse>(API_ENDPOINTS.healthDailySync, {
-      ...payload,
-      checkResume: options?.checkResume ?? false,
-    });
+    return api.post<DailySyncResponse>(API_ENDPOINTS.healthDailySync, payload);
   },
 
   buildPayload: buildDailySyncPayload,

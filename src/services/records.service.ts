@@ -4,7 +4,6 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './api';
 import { API_ENDPOINTS } from '@/constants/api';
 import { useAuthStore } from '@/store/auth-store';
-import { RecordType } from '@/types';
 import type { VisionParseResult } from '@/types/medical-record-standard';
 import {
   applyOcrResult,
@@ -13,6 +12,7 @@ import {
   getRecord,
   getRecordFile,
   listRecords,
+  listPdfRecords,
   type CreateRecordInput,
 } from '@/storage/records-repository';
 import { buildExportText, parseStandardMedicalRecord } from '@/utils/parse-medical-record';
@@ -31,23 +31,12 @@ export class NotMedicalDocumentError extends Error {
   }
 }
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_PDF_BYTES = 15 * 1024 * 1024;
 
-function maxBytesForMime(mimeType?: string): number {
-  const mime = (mimeType ?? '').toLowerCase();
-  return mime.includes('pdf') ? MAX_PDF_BYTES : MAX_IMAGE_BYTES;
-}
-
-function fileExtensionForMime(mime: string): string {
-  if (mime.includes('pdf')) return 'pdf';
-  if (mime.includes('png')) return 'png';
-  if (mime.includes('webp')) return 'webp';
-  return 'jpg';
-}
-
 export const recordsService = {
-  getAll: (type?: RecordType) => listRecords(ownerUserId(), type),
+  getAll: () => listRecords(ownerUserId()),
+
+  listPdfDocuments: () => listPdfRecords(ownerUserId()),
 
   getById: (id: number) => getRecord(ownerUserId(), id),
 
@@ -55,59 +44,43 @@ export const recordsService = {
 
   create: (data: CreateRecordInput) => createRecord(ownerUserId(), data),
 
-  createImage: async (data: {
+  createDocument: async (data: {
     fileData: Uint8Array;
     title?: string;
-    mimeType?: string;
     cacheUri?: string;
   }) => {
     const owner = ownerUserId();
-    const mimeType = data.mimeType ?? 'image/jpeg';
-    const maxBytes = maxBytesForMime(mimeType);
-    if (data.fileData.byteLength > maxBytes) {
-      throw new Error(mimeType.includes('pdf') ? 'Ukuran PDF maksimal 15 MB' : 'Ukuran file maksimal 10 MB');
+    const mimeType = 'application/pdf';
+    if (data.fileData.byteLength > MAX_PDF_BYTES) {
+      throw new Error('Ukuran PDF maksimal 15 MB');
     }
     try {
       return await createRecord(owner, {
         type: 'image',
-        title: data.title?.trim() || (mimeType.includes('pdf') ? 'Dokumen PDF' : 'Dokumen medis'),
+        title: data.title?.trim() || 'Dokumen PDF',
         fileData: new Uint8Array(data.fileData),
         fileMime: mimeType,
-        tags: ['Dokumen'],
+        tags: ['PDF', 'Dokumen'],
       });
     } finally {
       if (data.cacheUri) {
         try {
           await FileSystem.deleteAsync(toAbsoluteFileUri(data.cacheUri), { idempotent: true });
-        } catch { /* best-effort cache cleanup */ }
+        } catch { /* best-effort */ }
       }
     }
   },
 
-  enrichImage: async (id: number, fileBase64: string, mimeType = 'image/jpeg') => {
+  enrichDocument: async (id: number, fileBase64: string) => {
     const owner = ownerUserId();
-    const legacy = await api.post<VisionParseResult>(API_ENDPOINTS.aiOcr, { imageBase64: fileBase64, mimeType });
+    const legacy = await api.post<VisionParseResult>(API_ENDPOINTS.aiOcr, {
+      imageBase64: fileBase64,
+      mimeType: 'application/pdf',
+    });
     if (legacy.isMedicalDocument === false) {
       throw new NotMedicalDocumentError(legacy.rejectionReason ?? 'Dokumen bukan rekam medis');
     }
     return applyOcrResult(owner, id, legacy);
-  },
-
-  createVoice: (data: {
-    title: string;
-    transcription?: string;
-    durationSeconds?: number;
-  }) => {
-    const detail = data.durationSeconds
-      ? `Durasi: ${Math.floor(data.durationSeconds / 60)}:${String(data.durationSeconds % 60).padStart(2, '0')} menit`
-      : 'Catatan suara';
-    return createRecord(ownerUserId(), {
-      type: 'voice',
-      title: data.title,
-      content: data.transcription || detail,
-      summary: data.transcription || detail,
-      tags: ['Rekaman', 'Suara'],
-    });
   },
 
   delete: async (id: number) => ({ deleted: await deleteRecord(ownerUserId(), id) }),
@@ -137,17 +110,40 @@ export const recordsService = {
     });
   },
 
-  exportOriginalImage: async (id: number) => {
+  exportOriginalPdf: async (id: number) => {
     const file = await getRecordFile(ownerUserId(), id);
-    if (!file) throw new Error('File asli tidak tersedia');
+    if (!file) throw new Error('PDF tidak tersedia');
+    if (!file.mime.includes('pdf')) throw new Error('Hanya PDF yang dapat diunduh');
 
-    const ext = fileExtensionForMime(file.mime);
-    const target = new File(Paths.cache, `rekam-medis-${id}.${ext}`);
+    const target = new File(Paths.cache, `rekam-medis-${id}.pdf`);
     target.write(file.data);
 
     await Share.share({
-      title: 'Unduh dokumen',
+      title: 'Unduh PDF',
       url: target.uri,
     });
+  },
+
+  /** @deprecated use createDocument */
+  createImage: async (data: {
+    fileData: Uint8Array;
+    title?: string;
+    mimeType?: string;
+    cacheUri?: string;
+  }) => {
+    if (data.mimeType && data.mimeType !== 'application/pdf') {
+      throw new Error('Hanya PDF yang didukung');
+    }
+    return recordsService.createDocument({
+      fileData: data.fileData,
+      title: data.title,
+      cacheUri: data.cacheUri,
+    });
+  },
+
+  /** @deprecated use enrichDocument */
+  enrichImage: (id: number, fileBase64: string, mimeType = 'application/pdf') => {
+    if (mimeType !== 'application/pdf') throw new Error('Hanya PDF yang didukung');
+    return recordsService.enrichDocument(id, fileBase64);
   },
 };

@@ -65,7 +65,7 @@ export interface DailyLog {
   detail: string | null;
   logDate: string;
   time: string;
-  source: 'manual' | 'schedule' | 'heally';
+  source: 'manual' | 'schedule';
   createdAt: string;
 }
 
@@ -97,136 +97,14 @@ export interface ScreeningSession {
   completedAt: string;
 }
 
-// ── ChatGPT-Style Chat Room Session ──────────────────────────────────────────
-export interface ChatSession {
-  id: number;
-  sessionUuid: string;
-  userId: number;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ── Chat ────────────────────────────────────────────────────────────────────
-export type VerifStatus = 'pending' | 'approved' | 'revised';
-export type ChatSafetyLevel = 'general' | 'review' | 'urgent';
-export type ReviewScope = 'bubble' | 'session' | 'history';
-export type ReviewType = 'paid' | 'voluntary';
-
-export interface ChatMessage {
-  id: number;
-  userId: number;
-  sessionId?: number | null;
-  role: 'user' | 'assistant';
-  content: string;
-  needsVerif: boolean;
-  safetyLevel: ChatSafetyLevel;
-  safetyReasons: string[];
-  verifStatus: VerifStatus | null;
-  verifDoctorName: string | null;
-  verifNote: string | null;
-  verifItemNote?: string | null;
-  verifSummaryNote?: string | null;
-  fromWhatsApp: boolean;
-  askId?: string | null;
-  thinkingSummary?: string | null;
-  thinkingDetail?: string | null;
-  createdAt: string;
-}
-
-export interface HeallyAsk {
-  id: string;
-  userId: number;
-  armId: string;
-  intent: string;
-  title: string;
-  body: string;
-  status: 'pending' | 'delivered' | 'replied' | 'expired' | 'dismissed';
-  channels: string[];
-  messageId: number | null;
-  reward: string | null;
-  deliveredAt: string | null;
-  repliedAt: string | null;
-  expiresAt: string | null;
-  createdAt: string;
-}
-
-// ── Verif & Doctor Review Requests ───────────────────────────────────────────
-export interface VerifRequest {
-  id: number;
-  messageId: number | null;
-  userQuestion: string;
-  aiAnswer: string;
-  status: VerifStatus;
-  doctorNote: string | null;
-  doctorName: string | null;
-  userName?: string;
-  userAvatar?: string;
-  requestedAt: string;
-  reviewedAt: string | null;
-}
-
-export interface VoluntaryPendingRequest {
-  id: number;
-  doctorId: number;
-  doctorName: string;
-  specialty: string;
-  avatarInitials: string;
-  reviewScope: ReviewScope;
-  doctorNote: string | null;
-  createdAt: string;
-  expiresAt: string;
-}
-
-export interface DoctorPermissionRequest {
-  id: number;
-  doctorId: number;
-  doctorName: string;
-  specialty: string;
-  avatarInitials: string;
-  reviewScope: ReviewScope;
-  qnaCount: number;
-  createdAt: string;
-}
-
-export interface ReviewItemSummary {
-  id: number;
-  clientMessageId: number;
-  doctorItemNote: string | null;
-  itemStatus: VerifStatus;
-}
-
-export interface ReviewSummary {
-  id: number;
-  clientMessageId: number;
-  status: VerifStatus;
-  reviewScope?: ReviewScope;
-  reviewType?: ReviewType;
-  requestStatus?: string;
-  qnaCount?: number;
-  fee?: string;
-  doctorName: string;
-  doctorNote: string | null;
-  doctorSummaryNote?: string | null;
-  items?: ReviewItemSummary[];
-  expiresAt: string;
-  decidedAt: string | null;
-}
-
+// ── Doctor ───────────────────────────────────────────────────────────────────
 export interface Doctor {
   id: number;
   name: string;
   email?: string;
   specialty: string;
-  feePerQna?: string;
-  rating: number;
-  reviewCount: number;
-  verifiedCount: number;
   isAvailable: boolean;
-  bio: string | null;
   avatarInitials: string;
-  colorScheme?: string;
-  isYours?: boolean;
 }
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
@@ -245,7 +123,6 @@ export interface DashboardData {
   nextScheduleItem: ScheduleItem | null;
   todaySchedule: ScheduleItem[];
   recentRecords: MedicalRecord[];
-  recentVerif: VerifRequest[];
   dailyInsight: DailyInsight;
 }
 

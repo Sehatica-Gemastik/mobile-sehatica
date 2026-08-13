@@ -1,23 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
-import { heallyService } from '@/services/heally.service';
+import { rdsaService } from '@/services/rdsa.service';
 import { dailySyncService } from '@/services/daily-sync.service';
 import {
   ensureNotificationPermission,
-  presentHeallyAskNotification,
-} from '@/services/heally-notifications';
+  presentRdsaNotification,
+} from '@/services/rdsa-notifications';
 import { useAuthStore } from '@/store/auth-store';
 
 const POLL_MS = 45_000;
 
-/**
- * Polls pending Heally asks, triggers one if none (dev-friendly),
- * and surfaces local notifications.
- */
-export function useHeallyAskSync() {
+export function useRdsaSync() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const queryClient = useQueryClient();
   const running = useRef(false);
 
   useEffect(() => {
@@ -31,39 +25,32 @@ export function useHeallyAskSync() {
       running.current = true;
       try {
         await ensureNotificationPermission();
-        const result = await dailySyncService.sync().catch(() => null);
-        if (result?.confirmPrompt?.sent) {
-          queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
-        }
-        let pending = await heallyService.getPendingAsks();
+        await dailySyncService.sync().catch(() => null);
+
+        let pending = await rdsaService.getPendingAsks();
 
         if (pending.length === 0) {
           const hour = new Date().getHours();
-          const result = await heallyService.triggerAsk({ localHour: hour });
+          const result = await rdsaService.triggerAsk({ localHour: hour });
           if (result.delivered && result.notification) {
-            await presentHeallyAskNotification(result.notification);
-            queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
-            pending = await heallyService.getPendingAsks();
+            await presentRdsaNotification(result.notification);
+            pending = await rdsaService.getPendingAsks();
           }
         }
 
         for (const ask of pending) {
-          const shown = await presentHeallyAskNotification({
+          const shown = await presentRdsaNotification({
             askId: ask.id,
             title: ask.title,
             body: ask.body,
           });
           if (shown) {
-            await heallyService.ackAsk(ask.id).catch(() => null);
+            await rdsaService.ackAsk(ask.id).catch(() => null);
           }
-        }
-
-        if (pending.length > 0) {
-          queryClient.invalidateQueries({ queryKey: ['heally-messages'] });
         }
       } catch (err) {
         if (Platform.OS !== 'web') {
-          console.warn('[heally-ask-sync]', err);
+          console.warn('[rdsa-sync]', err);
         }
       } finally {
         running.current = false;
@@ -82,5 +69,5 @@ export function useHeallyAskSync() {
       if (timer) clearInterval(timer);
       sub.remove();
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated]);
 }

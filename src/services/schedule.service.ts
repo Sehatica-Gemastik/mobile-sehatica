@@ -96,7 +96,7 @@ export const scheduleService = {
     }
 
     const items = await replaceAiSchedules(owner, date, generated.items);
-    dailySyncService.sync(date, { checkResume: false }).catch(() => null);
+    dailySyncService.sync(date).catch(() => null);
 
     return {
       items,

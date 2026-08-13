@@ -29,7 +29,7 @@ export type CreateDailyLogInput = {
 };
 
 const VALID_TYPES = new Set<DailyLogType>(['food', 'medication', 'exercise', 'water']);
-const VALID_SOURCES = new Set<DailyLog['source']>(['manual', 'schedule', 'heally']);
+const VALID_SOURCES = new Set<DailyLog['source']>(['manual', 'schedule']);
 
 function validateInput(input: CreateDailyLogInput): CreateDailyLogInput {
   const title = input.title.trim();

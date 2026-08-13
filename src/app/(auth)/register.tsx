@@ -9,10 +9,13 @@ import { useAuthStore } from '@/store/auth-store';
 import { authService } from '@/services/auth.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { Button, TextField, Icon } from '@/components/ui';
+import { AppScreen } from '@/components/screen-background';
+import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 
 export default function RegisterScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
+  const topPadding = useScreenTopPadding(Spacing.lg);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,10 +57,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <AppScreen style={styles.container}>
+      <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -67,7 +71,7 @@ export default function RegisterScreen() {
             </View>
             <Text style={[styles.title, { color: colors.text }]}>Buat akun</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Mulai perjalanan kesehatan bersama Heally
+              Mulai perjalanan kesehatan bersama Sehatica
             </Text>
           </View>
 
@@ -134,12 +138,14 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  safe: { flex: 1 },
   scroll: {
     flexGrow: 1,
     paddingHorizontal: Spacing.lg,

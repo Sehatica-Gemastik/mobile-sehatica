@@ -47,3 +47,11 @@ export async function readDocumentFile(uri: string): Promise<{ bytes: Uint8Array
 export function bytesFromBase64(base64: string): Uint8Array {
   return base64ToBytes(base64);
 }
+
+export function base64FromBytes(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}

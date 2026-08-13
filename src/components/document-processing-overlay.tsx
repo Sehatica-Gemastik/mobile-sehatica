@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, Animated, Easing, useColorScheme, ActivityIndicator,
 } from 'react-native';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
 import { Icon, IconName } from '@/components/ui';
 
 export type DocumentProcessingPhase = 'saving' | 'reading' | 'parsing' | 'finishing';
@@ -91,7 +91,7 @@ export function DocumentProcessingOverlay({ state }: DocumentProcessingOverlayPr
   return (
     <View style={styles.root} pointerEvents="auto">
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+        <View style={[styles.card, Shadows.md, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.hero}>
             <Animated.View
               style={[
@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
     padding: Spacing.xl,
     gap: Spacing.sm,
     alignItems: 'center',

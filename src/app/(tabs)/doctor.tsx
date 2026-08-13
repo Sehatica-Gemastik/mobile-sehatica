@@ -6,8 +6,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { EmptyState, Icon, IconName, ScreenHeader } from '@/components/ui';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
+import { EmptyState, Icon, InitialsAvatar, ScreenHeader } from '@/components/ui';
 import { DoctorQrScanner } from '@/components/doctor-qr-scanner';
 import { Doctor } from '@/types';
 
@@ -17,16 +17,16 @@ export default function DoctorScreen() {
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  const { data: doctors = [], error, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['doctors'],
-    queryFn: doctorService.getAll,
+  const { data: partners = [], error, isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ['doctor-partners'],
+    queryFn: doctorService.getPartners,
     placeholderData: [],
   });
 
   const addPartnerMutation = useMutation({
     mutationFn: doctorService.addPartnerByCode,
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-partners'] });
       setScannerOpen(false);
       const name = result.doctor?.name ?? 'Dokter';
       Alert.alert(
@@ -41,59 +41,29 @@ export default function DoctorScreen() {
     },
   });
 
-  function StarRating({ rating }: { rating: number }) {
-    return (
-      <View style={styles.stars}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Icon
-            key={star}
-            name={star <= Math.round(rating) ? 'star' : 'star-outline'}
-            size="sm"
-            color={star <= Math.round(rating) ? colors.amber : colors.border}
-          />
-        ))}
-        <Text style={[styles.ratingText, { color: colors.textSecondary }]}>{rating.toFixed(1)}</Text>
-      </View>
-    );
-  }
-
-  const partners = doctors.filter((d) => d.isYours);
-  const others = doctors.filter((d) => !d.isYours);
-
-  const stats: { label: string; value: string; icon: IconName }[] = [
-    {
-      label: 'Verifikasi',
-      value: `${doctors.reduce((a, d) => a + d.verifiedCount, 0)}`,
-      icon: 'checkmark-circle-outline',
-    },
-    {
-      label: 'Partner',
-      value: `${partners.length}`,
-      icon: 'people-outline',
-    },
-    {
-      label: 'Avg rating',
-      value: doctors.length
-        ? `${(doctors.reduce((a, d) => a + d.rating, 0) / doctors.length).toFixed(1)}`
-        : '—',
-      icon: 'star-outline',
-    },
-  ];
-
-  const renderDoctor = (doctor: Doctor) => (
-    <View key={doctor.id} style={[styles.doctorCard, { borderColor: colors.border }]}>
-      <View style={styles.doctorTop}>
-        <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.avatarText, { color: colors.primary }]}>{doctor.avatarInitials}</Text>
-          {doctor.isAvailable && <View style={styles.availableDot} />}
-        </View>
+  const renderPartner = (doctor: Doctor) => (
+    <View
+      key={doctor.id}
+      style={[
+        styles.partnerCard,
+        Shadows.sm,
+        { backgroundColor: colors.backgroundCard, borderColor: colors.borderLight },
+      ]}
+    >
+      <View style={styles.cardTop}>
+        <InitialsAvatar
+          initials={doctor.avatarInitials}
+          name={doctor.name}
+          size="md"
+          showOnline
+          isOnline={doctor.isAvailable}
+        />
 
         <View style={styles.doctorInfo}>
           <Text style={[styles.doctorName, { color: colors.text }]} numberOfLines={1}>
             {doctor.name}
           </Text>
           <Text style={[styles.specialty, { color: colors.textSecondary }]}>{doctor.specialty}</Text>
-          <StarRating rating={doctor.rating} />
         </View>
 
         <View
@@ -122,77 +92,65 @@ export default function DoctorScreen() {
         </View>
       </View>
 
-      <View style={[styles.doctorStats, { borderTopColor: colors.borderLight }]}>
-        <View style={styles.doctorStat}>
-          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.verifiedCount}</Text>
-          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Verifikasi</Text>
-        </View>
-        <View style={[styles.doctorStatDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.doctorStat}>
-          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.reviewCount}</Text>
-          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Ulasan</Text>
-        </View>
-        <View style={[styles.doctorStatDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.doctorStat}>
-          <Text style={[styles.doctorStatValue, { color: colors.text }]}>{doctor.rating.toFixed(1)}</Text>
-          <Text style={[styles.doctorStatLabel, { color: colors.textMuted }]}>Rating</Text>
-        </View>
-      </View>
-
-      {doctor.isYours ? (
-        <View style={[styles.partnerTag, { backgroundColor: colors.primaryLight }]}>
-          <Icon name="checkmark-circle" size="sm" color={colors.primary} />
-          <Text style={[styles.partnerTagText, { color: colors.primary }]}>Partner Anda</Text>
-        </View>
-      ) : null}
-
-      {doctor.bio ? (
-        <Text style={[styles.bio, { color: colors.textSecondary }]} numberOfLines={2}>
-          {doctor.bio}
-        </Text>
-      ) : null}
-
-      <TouchableOpacity
-        style={[
-          styles.consultBtn,
-          {
-            backgroundColor: doctor.isAvailable ? colors.primary : colors.backgroundElement,
-            opacity: doctor.isAvailable ? 1 : 0.6,
-          },
-        ]}
-        activeOpacity={0.8}
-        disabled={!doctor.isAvailable}
-        onPress={() => router.push('/(tabs)/heally')}
-      >
-        <Icon
-          name="call-outline"
-          size="sm"
-          color={doctor.isAvailable ? colors.onPrimary : colors.textMuted}
-        />
-        <Text
+      <View style={styles.actionRow}>
+        <TouchableOpacity
           style={[
-            styles.consultBtnText,
-            { color: doctor.isAvailable ? 'white' : colors.textMuted },
+            styles.actionBtn,
+            {
+              backgroundColor: doctor.isAvailable ? colors.primary : colors.backgroundElement,
+              opacity: doctor.isAvailable ? 1 : 0.7,
+            },
           ]}
+          activeOpacity={0.8}
+          disabled={!doctor.isAvailable}
+          onPress={() => router.push(`/chat/${doctor.id}`)}
         >
-          {doctor.isAvailable ? 'Buka Heally untuk review' : 'Sedang tidak tersedia'}
-        </Text>
-      </TouchableOpacity>
+          <Icon
+            name="chatbubble-outline"
+            size="sm"
+            color={doctor.isAvailable ? colors.onPrimary : colors.textMuted}
+          />
+          <Text
+            style={[
+              styles.actionBtnText,
+              { color: doctor.isAvailable ? colors.onPrimary : colors.textMuted },
+            ]}
+          >
+            Hubungi dokter
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnOutline, { borderColor: colors.primary, backgroundColor: colors.backgroundCard }]}
+          activeOpacity={0.8}
+          onPress={() => router.push({
+            pathname: '/doctor/transfer/[doctorId]',
+            params: { doctorId: String(doctor.id), doctorName: doctor.name },
+          })}
+        >
+          <Icon name="bluetooth-outline" size="sm" color={colors.primary} />
+          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Transfer file</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Dokter partner"
-        subtitle={`${partners.length} partner · ${doctors.filter((d) => d.isAvailable).length} tersedia`}
+        title="Verifikasi partner"
+        subtitle={
+          partners.length > 0
+            ? `${partners.length} partner · ${partners.filter((d) => d.isAvailable).length} online`
+            : 'Hubungkan dokter via QR'
+        }
       >
         <TouchableOpacity
           onPress={() => setScannerOpen(true)}
           style={[styles.addRow, { backgroundColor: colors.backgroundElement }]}
           activeOpacity={0.75}
         >
-          <View style={[styles.addIcon, { backgroundColor: colors.background }]}>
+          <View style={[styles.addIcon, { backgroundColor: colors.backgroundCard }]}>
             <Icon name="person-add-outline" size="md" color={colors.primary} />
           </View>
           <View style={styles.addCopy}>
@@ -212,16 +170,16 @@ export default function DoctorScreen() {
       ) : error ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Daftar dokter tidak dapat dibuka"
+          title="Daftar partner tidak dapat dibuka"
           description={error instanceof Error ? error.message : 'Periksa koneksi lalu coba lagi.'}
           actionLabel="Coba lagi"
           onAction={refetch}
         />
-      ) : doctors.length === 0 ? (
+      ) : partners.length === 0 ? (
         <EmptyState
           icon="medkit-outline"
-          title="Belum ada dokter tersedia"
-          description="Scan QR dokter untuk menambah partner pertama Anda."
+          title="Belum ada partner"
+          description="Scan QR dokter untuk menambah partner verifikasi pertama Anda."
           actionLabel="Scan QR"
           onAction={() => setScannerOpen(true)}
         />
@@ -233,45 +191,7 @@ export default function DoctorScreen() {
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
           }
         >
-          <View style={styles.statsRow}>
-            {stats.map(({ label, value, icon }) => (
-              <View key={label} style={[styles.statCard, { borderColor: colors.border }]}>
-                <Icon name={icon} size="md" color={colors.primary} />
-                <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {partners.length > 0 ? (
-            <>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Partner saya</Text>
-              {partners.map(renderDoctor)}
-            </>
-          ) : null}
-
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {partners.length > 0 ? 'Dokter lain' : 'Dokter tersedia'}
-          </Text>
-          {others.length > 0 ? (
-            others.map(renderDoctor)
-          ) : partners.length === 0 ? (
-            <TouchableOpacity
-              onPress={() => setScannerOpen(true)}
-              style={[styles.emptyCard, { borderColor: colors.border }]}
-              activeOpacity={0.75}
-            >
-              <Icon name="qr-code-outline" size="lg" color={colors.textMuted} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum ada dokter</Text>
-              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                Scan QR dokter untuk menambah partner pertama Anda
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>
-              Semua dokter sudah jadi partner Anda
-            </Text>
-          )}
+          {partners.map(renderPartner)}
         </ScrollView>
       )}
 
@@ -305,31 +225,17 @@ const styles = StyleSheet.create({
   addSub: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.lg, gap: 12, paddingBottom: 100 },
-  statsRow: { flexDirection: 'row', gap: 8 },
-  statCard: {
-    flex: 1, alignItems: 'center', gap: 4, padding: 12,
-    borderRadius: BorderRadius.md, borderWidth: 1,
+  partnerCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: Spacing.base,
+    gap: Spacing.md,
   },
-  statValue: { fontSize: FontSize.md, fontFamily: Fonts.bold },
-  statLabel: { fontSize: FontSize.xs, textAlign: 'center', fontFamily: Fonts.regular },
-  sectionTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold, marginTop: 4 },
-  doctorCard: { borderRadius: BorderRadius.md, borderWidth: 1, overflow: 'hidden' },
-  doctorTop: { flexDirection: 'row', gap: 12, padding: Spacing.base, alignItems: 'flex-start' },
-  avatar: {
-    width: 48, height: 48, borderRadius: BorderRadius.sm,
-    alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
-  },
-  avatarText: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
-  availableDot: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 10, height: 10, borderRadius: 5,
-    backgroundColor: '#4ADE80', borderWidth: 2, borderColor: 'white',
-  },
+  cardTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   doctorInfo: { flex: 1, gap: 3 },
   doctorName: { fontSize: FontSize.sm, fontFamily: Fonts.bold, lineHeight: 18 },
   specialty: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
-  stars: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-  ratingText: { fontSize: FontSize.xs, marginLeft: 4, fontFamily: Fonts.medium },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 8, paddingVertical: 4,
@@ -337,27 +243,25 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
-  doctorStats: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1 },
-  doctorStat: { flex: 1, alignItems: 'center', gap: 2 },
-  doctorStatValue: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
-  doctorStatLabel: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
-  doctorStatDivider: { width: 1, height: 28 },
-  partnerTag: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    marginHorizontal: Spacing.base, alignSelf: 'flex-start',
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: BorderRadius.full,
+  chatBtn: {
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
-  partnerTagText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
-  bio: { paddingHorizontal: Spacing.base, paddingTop: 8, fontSize: FontSize.xs, lineHeight: 17, fontFamily: Fonts.regular },
-  consultBtn: {
-    margin: Spacing.base, paddingVertical: 12, borderRadius: BorderRadius.md,
-    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+  chatBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
-  consultBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
-  emptyCard: {
-    alignItems: 'center', gap: 8, padding: Spacing.xl,
-    borderRadius: BorderRadius.md, borderWidth: 1, borderStyle: 'dashed',
-  },
-  emptyTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
-  emptyDesc: { fontSize: FontSize.xs, fontFamily: Fonts.regular, textAlign: 'center' },
+  actionBtnOutline: { borderWidth: 1 },
+  actionBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
 });

@@ -5,14 +5,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/auth-store';
-import { useHeallyAskSync } from '@/hooks/use-heally-ask-sync';
-import { useHeallyStore } from '@/store/heally-store';
+import { useLifestyleStore } from '@/store/lifestyle-store';
+import { useRdsaSync } from '@/hooks/use-rdsa-sync';
 import {
   useFonts,
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 
 if (Platform.OS === 'web') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -33,47 +34,60 @@ const queryClient = new QueryClient({
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, loadStoredAuth, user } = useAuthStore();
+  const identityCompleted = useLifestyleStore((state) => Boolean(state.identity));
+  const lifestyleLoading = useLifestyleStore((state) => state.isLoading);
+  const loadProfile = useLifestyleStore((state) => state.loadProfile);
   const router = useRouter();
   const segments = useSegments();
   const previousUserId = useRef<number | null>(null);
 
-  useHeallyAskSync();
+  useRdsaSync();
 
   useEffect(() => {
-    loadStoredAuth().then(() => {
+    Promise.all([loadStoredAuth(), loadProfile()]).then(() => {
       SplashScreen.hideAsync();
     });
-  }, [loadStoredAuth]);
+  }, [loadStoredAuth, loadProfile]);
 
   useEffect(() => {
     const userId = user?.id ?? null;
     if (previousUserId.current !== userId) {
       queryClient.clear();
-      useHeallyStore.getState().reset();
       previousUserId.current = userId;
     }
   }, [user?.id]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || lifestyleLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const group = segments[0];
+    const inAuthGroup = group === '(auth)';
+    const inOnboarding = group === '(onboarding)';
 
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
+    if (!identityCompleted) {
+      if (!inOnboarding) router.replace('/(onboarding)/identity');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      if (!inAuthGroup) router.replace('/(auth)/login');
+      return;
+    }
+
+    if (inAuthGroup || inOnboarding) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, router, segments]);
+  }, [identityCompleted, isAuthenticated, isLoading, lifestyleLoading, router, segments]);
 
   return <>{children}</>;
 }
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   if (!fontsLoaded) return null;
@@ -83,9 +97,16 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthGuard>
           <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="weekly-checkin" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="daily-checkin" options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="record/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="account" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="account/identity" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="chat/[doctorId]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="doctor/transfer/[doctorId]" options={{ headerShown: false, animation: 'slide_from_right' }} />
           </Stack>
         </AuthGuard>
       </SafeAreaProvider>

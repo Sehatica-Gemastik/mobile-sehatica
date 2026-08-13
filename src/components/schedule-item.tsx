@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, useColorScheme,
 } from 'react-native';
 import { ScheduleItem } from '@/types';
-import { Colors, Fonts, FontSize, BorderRadius } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Shadows } from '@/constants/theme';
 import { Icon, scheduleIcons } from '@/components/ui';
 
 interface ScheduleItemCardProps {
@@ -22,13 +22,13 @@ export function ScheduleItemCard({ item, onToggle, onLongPress }: ScheduleItemCa
       onPress={onToggle}
       onLongPress={onLongPress}
       accessibilityHint={onLongPress ? 'Tekan lama untuk menghapus aktivitas' : undefined}
-      activeOpacity={0.7}
+      activeOpacity={0.82}
       style={[
         styles.container,
+        Shadows.sm,
         {
-          backgroundColor: item.done ? colors.backgroundElement : colors.backgroundCard,
-          borderColor: colors.border,
-          opacity: item.done ? 0.55 : 1,
+          backgroundColor: colors.backgroundCard,
+          opacity: item.done ? 0.6 : 1,
         },
       ]}
     >
@@ -61,7 +61,7 @@ export function ScheduleItemCard({ item, onToggle, onLongPress }: ScheduleItemCa
             styles.checkbox,
             item.done
               ? { backgroundColor: colors.primary, borderColor: colors.primary }
-              : { borderColor: colors.border },
+              : { borderColor: colors.borderLight },
           ]}
         >
           {item.done ? <Icon name="checkmark" size="sm" color={colors.onPrimary} /> : null}
@@ -76,20 +76,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: BorderRadius.xl,
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   content: { flex: 1, gap: 2 },
-  label: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  label: { fontSize: FontSize.sm, fontFamily: Fonts.semibold },
   labelDone: { textDecorationLine: 'line-through' },
   detail: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   right: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },

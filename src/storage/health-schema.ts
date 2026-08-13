@@ -1,4 +1,4 @@
-export const HEALTH_DATABASE_VERSION = 6;
+export const HEALTH_DATABASE_VERSION = 7;
 
 export const MIGRATION_0_TO_1 = `
   CREATE TABLE medical_records (
@@ -118,4 +118,9 @@ export const MIGRATION_5_TO_6 = `
     ON heally_sessions (owner_user_id, created_at DESC);
 
   ALTER TABLE heally_messages ADD COLUMN session_id INTEGER REFERENCES heally_sessions(id) ON DELETE CASCADE;
+`;
+
+export const MIGRATION_6_TO_7 = `
+  DROP TABLE IF EXISTS heally_messages;
+  DROP TABLE IF EXISTS heally_sessions;
 `;

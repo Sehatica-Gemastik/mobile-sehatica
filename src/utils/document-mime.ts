@@ -13,5 +13,5 @@ export function resolveDocumentMime(name?: string | null, mimeType?: string | nu
 }
 
 export function isSupportedMedicalFileMime(mimeType: string): boolean {
-  return mimeType.startsWith('image/') || mimeType === 'application/pdf';
+  return mimeType === 'application/pdf';
 }
