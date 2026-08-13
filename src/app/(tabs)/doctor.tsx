@@ -92,32 +92,46 @@ export default function DoctorScreen() {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[
-          styles.chatBtn,
-          {
-            backgroundColor: doctor.isAvailable ? colors.primary : colors.backgroundElement,
-            opacity: doctor.isAvailable ? 1 : 0.7,
-          },
-        ]}
-        activeOpacity={0.8}
-        disabled={!doctor.isAvailable}
-        onPress={() => router.push(`/chat/${doctor.id}`)}
-      >
-        <Icon
-          name="chatbubble-outline"
-          size="sm"
-          color={doctor.isAvailable ? colors.onPrimary : colors.textMuted}
-        />
-        <Text
+      <View style={styles.actionRow}>
+        <TouchableOpacity
           style={[
-            styles.chatBtnText,
-            { color: doctor.isAvailable ? colors.onPrimary : colors.textMuted },
+            styles.actionBtn,
+            {
+              backgroundColor: doctor.isAvailable ? colors.primary : colors.backgroundElement,
+              opacity: doctor.isAvailable ? 1 : 0.7,
+            },
           ]}
+          activeOpacity={0.8}
+          disabled={!doctor.isAvailable}
+          onPress={() => router.push(`/chat/${doctor.id}`)}
         >
-          {doctor.isAvailable ? 'Chat dokter' : 'Sedang offline'}
-        </Text>
-      </TouchableOpacity>
+          <Icon
+            name="chatbubble-outline"
+            size="sm"
+            color={doctor.isAvailable ? colors.onPrimary : colors.textMuted}
+          />
+          <Text
+            style={[
+              styles.actionBtnText,
+              { color: doctor.isAvailable ? colors.onPrimary : colors.textMuted },
+            ]}
+          >
+            Hubungi dokter
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnOutline, { borderColor: colors.primary, backgroundColor: colors.backgroundCard }]}
+          activeOpacity={0.8}
+          onPress={() => router.push({
+            pathname: '/doctor/transfer/[doctorId]',
+            params: { doctorId: String(doctor.id), doctorName: doctor.name },
+          })}
+        >
+          <Icon name="bluetooth-outline" size="sm" color={colors.primary} />
+          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Transfer file</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -238,4 +252,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chatBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  actionBtnOutline: { borderWidth: 1 },
+  actionBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
 });

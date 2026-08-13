@@ -4,7 +4,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { goBackOr } from '@/utils/go-back';
 import { useAuthStore } from '@/store/auth-store';
+import { useLifestyleStore } from '@/store/lifestyle-store';
+import { formatIdentityRows, formatIdentityUpdatedAt } from '@/features/lifestyle/identity-display';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
@@ -26,6 +29,9 @@ export default function AccountScreen() {
   const colors = Colors[scheme];
   const topPadding = useScreenTopPadding();
   const { user, clearAuth } = useAuthStore();
+  const identity = useLifestyleStore((state) => state.identity);
+  const identityRows = formatIdentityRows(identity);
+  const identityUpdatedAt = formatIdentityUpdatedAt(identity?.completedAt);
 
   const handleLogout = async () => {
     await clearAuth();
@@ -36,7 +42,7 @@ export default function AccountScreen() {
     <AppScreen style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safe}>
         <View style={[styles.topBar, surfaceHeaderShell(colors), { paddingTop: topPadding, backgroundColor: colors.background }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => goBackOr('/(tabs)')} style={styles.backBtn} activeOpacity={0.7}>
             <Icon name="arrow-back" size="md" color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.topTitle, { color: colors.text }]}>Akun</Text>
@@ -59,6 +65,44 @@ export default function AccountScreen() {
             <InfoRow label="Telepon" value={user?.phone?.trim() || 'Belum diisi'} colors={colors} muted={!user?.phone} />
             <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
             <InfoRow label="Terakhir aktif" value={formatLastActive()} colors={colors} />
+          </View>
+
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardHeaderCopy}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Data diri</Text>
+                <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
+                  {identity
+                    ? identityUpdatedAt
+                      ? `Terakhir diperbarui ${identityUpdatedAt}`
+                      : 'Dari onboarding'
+                    : 'Belum diisi'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/account/identity')}
+                style={[styles.editBtn, { backgroundColor: colors.primaryLight }]}
+                activeOpacity={0.8}
+              >
+                <Icon name="create-outline" size="sm" color={colors.primary} />
+                <Text style={[styles.editBtnText, { color: colors.primary }]}>
+                  {identity ? 'Edit' : 'Isi'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {identityRows.length > 0 ? (
+              identityRows.map((row, index) => (
+                <View key={row.key}>
+                  {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.borderLight }]} /> : null}
+                  <InfoRow label={row.label} value={row.value} colors={colors} />
+                </View>
+              ))
+            ) : (
+              <Text style={[styles.emptyIdentity, { color: colors.textMuted }]}>
+                Lengkapi data diri untuk perhitungan skor risiko PTM.
+              </Text>
+            )}
           </View>
 
           <Button label="Keluar" variant="secondary" onPress={handleLogout} fullWidth />
@@ -129,6 +173,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  cardHeaderCopy: { flex: 1, gap: 2 },
+  cardTitle: {
+    fontSize: FontSize.sm,
+    fontFamily: Fonts.bold,
+  },
+  cardSubtitle: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.regular,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+  },
+  editBtnText: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.semibold,
+  },
+  emptyIdentity: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.regular,
+    lineHeight: 18,
+    paddingTop: 4,
   },
   infoRow: { gap: 4, paddingVertical: 4 },
   infoLabel: {

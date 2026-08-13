@@ -23,7 +23,10 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const meta = typeMeta[record.type] ?? typeMeta.note;
-  const iconName = recordIcons[record.type] ?? recordIcons.note;
+  const iconName = record.fileMime?.includes('pdf') ? 'document-text-outline' : (recordIcons[record.type] ?? recordIcons.note);
+  const label = record.fileMime?.includes('pdf') ? 'PDF' : meta.label;
+  const badgeBg = record.fileMime?.includes('pdf') ? '#E0F7FA' : meta.bg;
+  const badgeText = record.fileMime?.includes('pdf') ? '#008A93' : meta.text;
 
   const formattedDate = record.recordDate
     ?? new Date(record.createdAt).toLocaleDateString('id-ID', {
@@ -37,8 +40,8 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
         activeOpacity={0.82}
         style={[styles.compactContainer, Shadows.sm, { backgroundColor: colors.backgroundCard }]}
       >
-        <View style={[styles.compactIcon, { backgroundColor: meta.bg }]}>
-          <Icon name={iconName} size="sm" color={meta.text} />
+        <View style={[styles.compactIcon, { backgroundColor: badgeBg }]}>
+          <Icon name={iconName} size="sm" color={badgeText} />
         </View>
         <View style={styles.compactContent}>
           <Text style={[styles.compactTitle, { color: colors.text }]} numberOfLines={1}>
@@ -58,16 +61,16 @@ export function MedicalRecordCard({ record, onPress, compact = false }: MedicalR
       style={[styles.container, Shadows.sm, { backgroundColor: colors.backgroundCard }]}
     >
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: meta.bg }]}>
-          <Icon name={iconName} size="md" color={meta.text} />
+        <View style={[styles.iconContainer, { backgroundColor: badgeBg }]}>
+          <Icon name={iconName} size="md" color={badgeText} />
         </View>
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {record.title}
             </Text>
-            <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
-              <Text style={[styles.typeLabel, { color: meta.text }]}>{meta.label}</Text>
+            <View style={[styles.typeBadge, { backgroundColor: badgeBg }]}>
+              <Text style={[styles.typeLabel, { color: badgeText }]}>{label}</Text>
             </View>
           </View>
           <Text style={[styles.date, { color: colors.textMuted }]}>{formattedDate}</Text>

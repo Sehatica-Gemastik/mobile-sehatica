@@ -56,8 +56,8 @@ export default function RecordDetailScreen() {
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
-  const exportImageMutation = useMutation({
-    mutationFn: () => recordsService.exportOriginalImage(recordId),
+  const exportPdfMutation = useMutation({
+    mutationFn: () => recordsService.exportOriginalPdf(recordId),
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
@@ -181,12 +181,12 @@ export default function RecordDetailScreen() {
             loadingLabel="Menyiapkan..."
             fullWidth
           />
-          {fileBlob ? (
+          {fileBlob && isPdfFile ? (
             <Button
-              label="Unduh foto asli"
+              label="Unduh PDF asli"
               variant="secondary"
-              onPress={() => exportImageMutation.mutate()}
-              loading={exportImageMutation.isPending}
+              onPress={() => exportPdfMutation.mutate()}
+              loading={exportPdfMutation.isPending}
               loadingLabel="Menyiapkan..."
               fullWidth
             />

@@ -53,5 +53,7 @@ export const API_ENDPOINTS = {
   rdsaAckAsk: (askId: string) => `/rdsa/asks/${askId}/ack`,
   doctorPartners: '/doctors/partners',
   doctorDetail: (id: number) => `/doctors/${id}`,
+  doctorRecordTransfer: (doctorId: number) => `/doctors/partners/${doctorId}/record-transfers`,
+  ptmRisk: '/health/ptm-risk',
   chatMessages: (doctorId: number) => `/chat/${doctorId}/messages`,
 } as const;

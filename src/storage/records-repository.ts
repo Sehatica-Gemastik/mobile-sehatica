@@ -84,6 +84,17 @@ export async function listRecords(ownerUserId: number, type?: RecordType): Promi
   return rows.map(toRecord);
 }
 
+export async function listPdfRecords(ownerUserId: number): Promise<MedicalRecord[]> {
+  const database = await getHealthDatabase();
+  const rows = await database.getAllAsync<RecordRow>(
+    `SELECT ${RECORD_COLUMNS} FROM medical_records
+      WHERE owner_user_id = ? AND file_mime = 'application/pdf'
+      ORDER BY created_at DESC`,
+    ownerUserId
+  );
+  return rows.map(toRecord);
+}
+
 export async function getRecord(ownerUserId: number, id: number): Promise<MedicalRecord | null> {
   const database = await getHealthDatabase();
   const row = await database.getFirstAsync<RecordRow>(

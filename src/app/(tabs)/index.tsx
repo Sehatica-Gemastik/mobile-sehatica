@@ -22,6 +22,9 @@ import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { Icon, InitialsAvatar } from '@/components/ui';
 import { ActionCardStack, ActionCardItem } from '@/components/dashboard/action-card-stack';
 import { ScheduleStack } from '@/components/dashboard/schedule-stack';
+import { RiskCard } from '@/components/dashboard/risk-card';
+import { buildPtmPayload, emptyPtmRiskResult } from '@/features/ptm/build-payload';
+import { ptmRiskService } from '@/services/ptm-risk.service';
 
 export default function HomeScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -33,13 +36,29 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const today = localDateKey();
+  const identity = useLifestyleStore((state) => state.identity);
   const weekly = useLifestyleStore((state) => state.weekly);
+  const daily = useLifestyleStore((state) => state.daily);
   const weeklyDue = useLifestyleStore(selectWeeklyDue);
   const dailyDone = useLifestyleStore(selectDailyDoneToday);
 
   useEffect(() => {
     void dailySyncService.sync(today).catch(() => null);
   }, [today]);
+
+  const ptmPayload = useMemo(
+    () => buildPtmPayload(identity, daily, weekly),
+    [identity, daily, weekly],
+  );
+
+  const { data: ptmRisk } = useQuery({
+    queryKey: ['ptm-risk', ptmPayload],
+    queryFn: () => ptmRiskService.predict(ptmPayload),
+    enabled: Boolean(identity),
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const riskData = ptmRisk ?? emptyPtmRiskResult();
 
   const {
     data: recordCount = 0,
@@ -118,7 +137,7 @@ export default function HomeScreen() {
       cards.push({
         id: 'records',
         title: 'Rekam medis perlu diperbarui',
-        subtitle: 'Upload hasil kunjungan agar rekam medis tetap akurat.',
+        subtitle: 'Upload PDF rekam medis dari kunjungan dokter.',
         icon: 'cloud-upload-outline',
         status: 'pending',
         onPress: () => router.push('/(tabs)/records'),
@@ -155,9 +174,10 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRecordsRefetching || isSchedulesRefetching}
-            onRefresh={() => Promise.all([
-              refetchRecords(), refetchSchedules(),
-            ]).then(() => undefined)}
+            onRefresh={() => {
+              queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
+              return Promise.all([refetchRecords(), refetchSchedules()]).then(() => undefined);
+            }}
             tintColor={colors.primary}
           />
         }
@@ -204,6 +224,11 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.heroContent}>
+          {identity ? (
+            <View style={styles.riskWrap}>
+              <RiskCard data={riskData} />
+            </View>
+          ) : null}
           <ActionCardStack cards={actionCards} />
         </View>
         </View>
@@ -256,6 +281,10 @@ const styles = StyleSheet.create({
   heroContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  riskWrap: {
+    marginBottom: 0,
   },
   scheduleSheet: {
     flexGrow: 1,
