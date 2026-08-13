@@ -8,6 +8,13 @@ export interface User {
   avatarInitials: string | null;
   isPro: boolean;
   phone?: string | null;
+  age?: number | null;
+  sex?: number | null;
+  race_ethnicity?: number | null;
+  education?: number | null;
+  income_poverty_ratio?: number | null;
+  identityCompletedAt?: string | null;
+  identityComplete?: boolean;
 }
 
 export interface AuthState {

@@ -1,6 +1,7 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '@/constants/api';
 import { User } from '@/types';
+import type { IdentityInput } from '@/features/identity/user-identity';
 
 export interface LoginResponse {
   user: User;
@@ -18,5 +19,8 @@ export const authService = {
   getMe: () => api.get<User>(API_ENDPOINTS.me),
 
   updateProfile: (data: Partial<User> & { name?: string }) =>
+    api.patch<User>(API_ENDPOINTS.updateProfile, data),
+
+  saveIdentity: (data: IdentityInput) =>
     api.patch<User>(API_ENDPOINTS.updateProfile, data),
 };
