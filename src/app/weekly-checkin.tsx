@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
+  Alert, ScrollView, StyleSheet, Text, TouchableOpacity,
   View, useColorScheme, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, nativeReset, Shadows } from '@/constants/theme';
-import { Button, Icon, ScreenHeader } from '@/components/ui';
+import { useQueryClient } from '@tanstack/react-query';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
+import { Button, Icon, ScreenHeader, TextField } from '@/components/ui';
 import { AppScreen } from '@/components/screen-background';
 import { computeBmi } from '@/features/lifestyle/derived';
 import { useLifestyleStore } from '@/store/lifestyle-store';
@@ -17,6 +18,7 @@ function parsePositive(value: string): number | null {
 }
 
 export default function WeeklyCheckinScreen() {
+  const queryClient = useQueryClient();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const weekly = useLifestyleStore((s) => s.weekly);
@@ -61,6 +63,7 @@ export default function WeeklyCheckinScreen() {
         systolic_bp: systolicBp,
         diastolic_bp: diastolicBp,
       });
+      queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
       router.back();
     } catch (err: any) {
       Alert.alert('Gagal', err.message ?? 'Data mingguan belum tersimpan.');
@@ -74,6 +77,7 @@ export default function WeeklyCheckinScreen() {
       <ScreenHeader
         title="Cek mingguan"
         subtitle="Isi sekali, lalu perbarui setiap minggu"
+        surface={false}
         right={(
           <TouchableOpacity
             accessibilityLabel="Tutup"
@@ -87,65 +91,64 @@ export default function WeeklyCheckinScreen() {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={[styles.card, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.cardKicker, { color: colors.primary }]}>TUBUH</Text>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Berat dan ukuran</Text>
-
-            <Field
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Berat dan ukuran</Text>
+            <TextField
               label="Berat"
               value={weight}
               onChangeText={setWeight}
-              unit="kg"
-              colors={colors}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              suffix="kg"
             />
-            <Field
+            <TextField
               label="Tinggi"
               value={height}
               onChangeText={setHeight}
-              unit="cm"
-              colors={colors}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              suffix="cm"
             />
-
-            <View style={[styles.bmiRow, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.bmiLabel, { color: colors.primaryDark }]}>BMI</Text>
-              <Text style={[styles.bmiValue, { color: colors.primaryDark }]}>
+            <View style={[styles.infoRow, { borderColor: colors.borderLight }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>BMI</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
                 {bmi != null ? `${bmi} kg/m²` : 'Otomatis dari berat dan tinggi'}
               </Text>
             </View>
-
-            <Field
+            <TextField
               label="Lingkar pinggang"
               value={waist}
               onChangeText={setWaist}
-              unit="cm"
-              colors={colors}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              suffix="cm"
             />
           </View>
 
-          <View style={[styles.card, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.cardKicker, { color: colors.primary }]}>TEKANAN DARAH</Text>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Sistolik dan diastolik</Text>
-            <Text style={[styles.cardHint, { color: colors.textMuted }]}>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Tekanan darah</Text>
+            <Text style={[styles.sectionHint, { color: colors.textMuted }]}>
               Dipakai untuk pemantauan. Tidak dikirim ke model hipertensi.
             </Text>
-
-            <Field
+            <TextField
               label="Sistolik"
               value={systolic}
               onChangeText={setSystolic}
-              unit="mmHg"
-              colors={colors}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              suffix="mmHg"
             />
-            <Field
+            <TextField
               label="Diastolik"
               value={diastolic}
               onChangeText={setDiastolic}
-              unit="mmHg"
-              colors={colors}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              suffix="mmHg"
             />
-
-            <View style={[styles.bpPreview, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.bpValue, { color: colors.text }]}>
+            <View style={[styles.infoRow, { borderColor: colors.borderLight }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Preview</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
                 {systolicBp && diastolicBp ? `${Math.round(systolicBp)} / ${Math.round(diastolicBp)} mmHg` : '-- / -- mmHg'}
               </Text>
             </View>
@@ -165,67 +168,29 @@ export default function WeeklyCheckinScreen() {
   );
 }
 
-function Field({
-  label, value, onChangeText, unit, colors,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  unit: string;
-  colors: typeof Colors.light;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <View style={[styles.fieldWrap, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType="decimal-pad"
-          placeholder="0"
-          placeholderTextColor={colors.textMuted}
-          style={[styles.fieldInput, { color: colors.text }]}
-          underlineColorAndroid="transparent"
-          selectionColor={colors.primary}
-        />
-        <Text style={[styles.fieldUnit, { color: colors.textMuted }]}>{unit}</Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
   closeButton: {
-    width: 36, height: 36, borderRadius: BorderRadius.full,
-    alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl, gap: Spacing.lg },
-  card: { borderRadius: BorderRadius.xl, padding: Spacing.base, gap: Spacing.md },
-  cardKicker: { fontSize: 11, fontFamily: Fonts.bold, letterSpacing: 0.6 },
-  cardTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold, marginTop: -6 },
-  cardHint: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular, marginTop: -8 },
-  field: { gap: 6 },
-  fieldLabel: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
-  fieldWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderRadius: BorderRadius.md,
-    paddingHorizontal: 14, minHeight: 48,
+  content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl, gap: Spacing.xl },
+  section: { gap: Spacing.base },
+  sectionTitle: { fontSize: FontSize.lg, fontFamily: Fonts.bold },
+  sectionHint: { fontSize: FontSize.xs, lineHeight: 18, fontFamily: Fonts.regular, marginTop: -4 },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  fieldInput: {
-    flex: 1, fontSize: FontSize.md, fontFamily: Fonts.medium, padding: 0,
-    ...(Platform.OS === 'web' ? nativeReset : null),
-  },
-  fieldUnit: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
-  bmiRow: {
-    borderRadius: BorderRadius.md, padding: Spacing.base,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
-  bmiLabel: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
-  bmiValue: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
-  bpPreview: {
-    borderRadius: BorderRadius.md, paddingVertical: 14, alignItems: 'center',
-  },
-  bpValue: { fontSize: FontSize.xl, fontFamily: Fonts.bold, letterSpacing: -0.4 },
+  infoLabel: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  infoValue: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
 });

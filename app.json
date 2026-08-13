@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.sehatica.mobile",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#F0FDF4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

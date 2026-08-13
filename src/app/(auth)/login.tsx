@@ -33,7 +33,6 @@ export default function LoginScreen() {
     try {
       const result = await authService.login(email.trim(), password);
       await setAuth(result.user, result.accessToken, result.refreshToken);
-      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Login Gagal', err.message ?? 'Email atau password salah');
     } finally {

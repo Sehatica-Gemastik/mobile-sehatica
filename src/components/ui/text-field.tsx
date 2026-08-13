@@ -11,13 +11,14 @@ import { Icon, IconName } from './icon';
 type Props = TextInputProps & {
   label?: string;
   icon?: IconName;
+  suffix?: string;
   secureToggle?: boolean;
   showSecure?: boolean;
   onToggleSecure?: () => void;
 };
 
 export function TextField({
-  label, icon, secureToggle, showSecure, onToggleSecure, style, ...rest
+  label, icon, suffix, secureToggle, showSecure, onToggleSecure, style, ...rest
 }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
@@ -46,6 +47,9 @@ export function TextField({
             />
           </TouchableOpacity>
         ) : null}
+        {suffix ? (
+          <Text style={[styles.suffix, { color: colors.textMuted }]}>{suffix}</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -71,4 +75,5 @@ const styles = StyleSheet.create({
     padding: 0,
     ...(Platform.OS === 'web' ? nativeReset : null),
   },
+  suffix: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
 });

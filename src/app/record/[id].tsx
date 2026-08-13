@@ -1,17 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, Alert, Image, useColorScheme,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { File, Paths } from 'expo-file-system';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recordsService } from '@/services/records.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
 import { Button, Icon, surfaceHeaderShell } from '@/components/ui';
+import { ConfirmModal } from '@/components/confirm-modal';
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { documentKindLabel, parseStandardMedicalRecord } from '@/utils/parse-medical-record';
+import { goBackOr } from '@/utils/go-back';
 
 function SectionBlock({ title, children, colors }: { title: string; children: React.ReactNode; colors: typeof Colors.light }) {
   return (
@@ -28,6 +30,8 @@ export default function RecordDetailScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const topPadding = useScreenTopPadding();
+  const queryClient = useQueryClient();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: record, isLoading, error } = useQuery({
     queryKey: ['record', recordId],
@@ -58,6 +62,16 @@ export default function RecordDetailScreen() {
 
   const exportPdfMutation = useMutation({
     mutationFn: () => recordsService.exportOriginalPdf(recordId),
+    onError: (err: Error) => Alert.alert('Gagal', err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => recordsService.delete(recordId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['records'] });
+      setDeleteOpen(false);
+      goBackOr('/(tabs)/records');
+    },
     onError: (err: Error) => Alert.alert('Gagal', err.message),
   });
 
@@ -191,8 +205,28 @@ export default function RecordDetailScreen() {
               fullWidth
             />
           ) : null}
+          <Button
+            label="Hapus permanen"
+            variant="secondary"
+            icon="trash-outline"
+            onPress={() => setDeleteOpen(true)}
+            style={{ borderColor: '#FECACA' }}
+            fullWidth
+          />
         </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={deleteOpen}
+        title="Hapus rekam medis?"
+        message={`"${record.title}" akan dihapus permanen dari perangkat ini. Tindakan ini tidak bisa dibatalkan.`}
+        confirmLabel="Hapus permanen"
+        cancelLabel="Batal"
+        destructive
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </AppScreen>
   );
 }

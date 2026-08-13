@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/auth-store';
 import { useLifestyleStore } from '@/store/lifestyle-store';
 import { useRdsaSync } from '@/hooks/use-rdsa-sync';
+import { userHasIdentity } from '@/features/identity/user-identity';
 import {
   useFonts,
   Inter_400Regular,
@@ -34,7 +35,7 @@ const queryClient = new QueryClient({
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, loadStoredAuth, user } = useAuthStore();
-  const identityCompleted = useLifestyleStore((state) => Boolean(state.identity));
+  const identityCompleted = userHasIdentity(user);
   const lifestyleLoading = useLifestyleStore((state) => state.isLoading);
   const loadProfile = useLifestyleStore((state) => state.loadProfile);
   const router = useRouter();
@@ -64,13 +65,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inAuthGroup = group === '(auth)';
     const inOnboarding = group === '(onboarding)';
 
-    if (!identityCompleted) {
-      if (!inOnboarding) router.replace('/(onboarding)/identity');
+    if (!isAuthenticated) {
+      if (!inAuthGroup) router.replace('/(auth)/login');
       return;
     }
 
-    if (!isAuthenticated) {
-      if (!inAuthGroup) router.replace('/(auth)/login');
+    if (!identityCompleted) {
+      if (!inOnboarding) router.replace('/(onboarding)/identity');
       return;
     }
 

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, useColorScheme } from 'react-native';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
+import { View, Text, StyleSheet, useColorScheme, ActivityIndicator } from 'react-native';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { Icon } from '@/components/ui';
 import type { RiskScore, PtmRiskResult, PtmTarget } from '@/services/ptm-risk.service';
 import { PTM_LABELS, PTM_ICONS } from '@/services/ptm-risk.service';
+import type { PtmReadinessReason } from '@/features/ptm/build-payload';
 
 function riskTier(probability: number): { label: string; color: string } {
   if (probability < 0.3) return { label: 'Rendah', color: '#22C55E' };
@@ -47,27 +48,44 @@ function ScoreRing({
 
 type Props = {
   data: PtmRiskResult;
+  isLoading?: boolean;
+  isError?: boolean;
+  readinessReason?: PtmReadinessReason;
 };
 
-export function RiskCard({ data }: Props) {
+export function RiskCard({ data, isLoading, isError, readinessReason }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const hasScore = data.dataComplete;
+  const hasScore = data.dataComplete && !isError;
   const overallPct = Math.round(data.overallScore * 100);
   const overallTier = hasScore ? riskTier(data.overallScore) : { label: 'Belum dihitung', color: colors.textMuted };
   const modelLabel = data.featureSet === 'clinical' ? 'model klinis' : 'model gaya hidup';
 
+  const statusMessage = (() => {
+    if (isLoading) return 'Menghitung skor risiko PTM...';
+    if (isError) return 'Gagal menghitung skor. Tarik layar untuk coba lagi.';
+    if (!hasScore && readinessReason === 'identity') {
+      return 'Lengkapi data diri untuk menghitung skor risiko PTM.';
+    }
+    if (!hasScore) return 'Isi kuisioner harian untuk menghitung skor risiko PTM.';
+    return `Skor risiko PTM ${overallPct}% · ${modelLabel}`;
+  })();
+
   return (
-    <View style={[styles.card, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
+    <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.borderLight }]}>
       <View style={styles.hero}>
         <ScoreRing
           progress={hasScore ? data.overallScore : 0}
           color={overallTier.color}
           trackColor={colors.backgroundElement}
         >
-          <Text style={[styles.heroScore, { color: colors.text }]}>
-            {hasScore ? (data.overallScore * 10).toFixed(1) : '0.0'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={[styles.heroScore, { color: colors.text }]}>
+              {hasScore ? (data.overallScore * 10).toFixed(1) : '0.0'}
+            </Text>
+          )}
         </ScoreRing>
 
         <View style={styles.heroCopy}>
@@ -75,9 +93,7 @@ export function RiskCard({ data }: Props) {
             {hasScore ? `${overallTier.label}!` : overallTier.label}
           </Text>
           <Text style={[styles.heroSub, { color: colors.textMuted }]}>
-            {hasScore
-              ? `Skor risiko PTM ${overallPct}% · ${modelLabel}`
-              : 'Isi kuisioner harian untuk menghitung skor risiko PTM'}
+            {statusMessage}
           </Text>
         </View>
       </View>
@@ -130,6 +146,7 @@ const RING_STROKE = 4;
 const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.xl,
+    borderWidth: 1,
     padding: Spacing.base,
     gap: Spacing.md,
   },

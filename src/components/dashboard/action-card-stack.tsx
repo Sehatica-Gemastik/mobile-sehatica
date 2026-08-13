@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useColorScheme } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, stackCardShadow, stackLayerOpacity } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, stackCardShadow } from '@/constants/theme';
 import { Icon, IconName } from '@/components/ui';
 import { iconStyleForStatus, CardStatus } from './card-colors';
 import { animateStackLayout, useAutoStackCycle } from './use-auto-stack-cycle';
@@ -18,6 +18,7 @@ export type ActionCardItem = {
 type Props = {
   cards: ActionCardItem[];
   sectionTitle?: string;
+  onGradient?: boolean;
 };
 
 const STACK_PEEK = 16;
@@ -55,7 +56,7 @@ function StackCard({
     }
     const y = stackIndex * STACK_PEEK;
     const scale = 1 - stackIndex * 0.04;
-    const opacity = stackLayerOpacity(false, stackIndex);
+    const opacity = stackIndex === 0 ? 1 : Math.max(0.38, 1 - stackIndex * 0.32);
     return {
       transform: [{ translateY: y }, { scale }],
       opacity,
@@ -86,7 +87,7 @@ function StackCard({
   );
 }
 
-export function ActionCardStack({ cards, sectionTitle = 'Yang perlu diperhatikan' }: Props) {
+export function ActionCardStack({ cards, sectionTitle = 'Yang perlu diperhatikan', onGradient = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const visibleCards = useMemo(() => cards.filter(Boolean), [cards]);
   const order = useAutoStackCycle(visibleCards.length, AUTO_INTERVAL_MS, expanded);
@@ -105,10 +106,14 @@ export function ActionCardStack({ cards, sectionTitle = 'Yang perlu diperhatikan
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+        <Text style={[styles.sectionTitle, onGradient && styles.sectionTitleOnGradient]}>
+          {sectionTitle}
+        </Text>
         {visibleCards.length > 1 ? (
           <Pressable onPress={toggleExpanded} hitSlop={8}>
-            <Text style={styles.toggleText}>{expanded ? 'Tumpuk' : 'Lihat semua'}</Text>
+            <Text style={[styles.toggleText, onGradient && styles.toggleTextOnGradient]}>
+              {expanded ? 'Tumpuk' : 'Lihat semua'}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -144,10 +149,16 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     letterSpacing: -0.3,
   },
+  sectionTitleOnGradient: {
+    color: '#FFFFFF',
+  },
   toggleText: {
     fontSize: FontSize.xs,
     fontFamily: Fonts.bold,
     color: Colors.light.primary,
+  },
+  toggleTextOnGradient: {
+    color: 'rgba(255, 255, 255, 0.92)',
   },
   stackContainer: {
     position: 'relative',

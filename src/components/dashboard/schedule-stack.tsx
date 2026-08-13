@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useColorScheme } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { ScheduleItem } from '@/types';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, stackCardShadow, stackLayerOpacity } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, stackCardShadow } from '@/constants/theme';
 import { Icon, scheduleIcons } from '@/components/ui';
 import { SCHEDULE_ICON } from './card-colors';
 import { animateStackLayout, useAutoStackCycle } from './use-auto-stack-cycle';
@@ -43,9 +43,10 @@ function ScheduleStackCard({
     }
     const y = stackIndex * STACK_PEEK;
     const scale = 1 - stackIndex * 0.035;
+    const opacity = stackIndex === 0 ? 1 : Math.max(0.38, 1 - stackIndex * 0.32);
     return {
       transform: [{ translateY: y }, { scale }],
-      opacity: stackLayerOpacity(false, stackIndex),
+      opacity,
       zIndex: total - stackIndex,
     };
   }, [expanded, stackIndex, total]);

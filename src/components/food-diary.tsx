@@ -20,7 +20,7 @@ type Props = {
   meals: MealEntry[];
   nutrition: NutritionDraft;
   nutritionManual: boolean;
-  onChangeMeals: (meals: MealEntry[]) => void;
+  onChangeMeals: (meals: MealEntry[] | ((prev: MealEntry[]) => MealEntry[])) => void;
   onChangeNutrition: (nutrition: Partial<NutritionDraft>) => void;
   onToggleManual: (enabled: boolean, prefill?: NutritionDraft) => void;
 };
@@ -51,18 +51,19 @@ export function FoodDiary({
   };
 
   const addFood = (foodId: string) => {
-    const existing = meals.find((entry) => entry.foodId === foodId);
-    if (existing) {
-      onChangeMeals(meals.map((entry) => (
-        entry.id === existing.id ? { ...entry, servings: entry.servings + 1 } : entry
-      )));
-      return;
-    }
-    onChangeMeals([...meals, { id: createEntryId(), meal: 'lunch', foodId, servings: 1 }]);
+    onChangeMeals((prev) => {
+      const existing = prev.find((entry) => entry.foodId === foodId);
+      if (existing) {
+        return prev.map((entry) => (
+          entry.id === existing.id ? { ...entry, servings: entry.servings + 1 } : entry
+        ));
+      }
+      return [...prev, { id: createEntryId(), meal: 'lunch', foodId, servings: 1 }];
+    });
   };
 
   const removeFood = (entryId: string) => {
-    onChangeMeals(meals.filter((entry) => entry.id !== entryId));
+    onChangeMeals((prev) => prev.filter((entry) => entry.id !== entryId));
   };
 
   const toggleManual = () => {

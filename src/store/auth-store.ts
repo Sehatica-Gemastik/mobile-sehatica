@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { User } from '@/types';
+import { authService } from '@/services/auth.service';
+import { useHealyStore } from '@/store/healy-store';
 
 interface AuthStore {
   user: User | null;
@@ -14,6 +16,7 @@ interface AuthStore {
   clearAuth: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   setUser: (user: User) => void;
+  refreshUser: () => Promise<User | null>;
   loadStoredAuth: () => Promise<boolean>;
 }
 
@@ -80,6 +83,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.error('Failed to clear auth storage:', err);
     }
     set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+    useHealyStore.getState().reset();
   },
 
   setTokens: async (accessToken, refreshToken) => {
@@ -95,6 +99,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user)).catch(console.error);
   },
 
+  refreshUser: async () => {
+    const { accessToken } = get();
+    if (!accessToken) return null;
+
+    try {
+      const user = await authService.getMe();
+      set({ user });
+      await storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      return user;
+    } catch (err) {
+      console.error('Failed to refresh user:', err);
+      return null;
+    }
+  },
+
   loadStoredAuth: async () => {
     set({ isLoading: true });
     try {
@@ -107,6 +126,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (accessToken && refreshToken && userJson) {
         const user = JSON.parse(userJson) as User;
         set({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+
+        void get().refreshUser().catch(() => null);
         return true;
       }
     } catch (err) {

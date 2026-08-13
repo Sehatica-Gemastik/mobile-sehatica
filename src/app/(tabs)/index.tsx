@@ -17,13 +17,14 @@ import {
   selectDailyDoneToday, selectWeeklyDue, useLifestyleStore,
 } from '@/store/lifestyle-store';
 import { daysSince } from '@/features/lifestyle/derived';
-import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows, BottomTabInset } from '@/constants/theme';
+import { Colors, Fonts, FontSize, BorderRadius, Spacing, BottomTabInset } from '@/constants/theme';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { Icon, InitialsAvatar } from '@/components/ui';
 import { ActionCardStack, ActionCardItem } from '@/components/dashboard/action-card-stack';
 import { ScheduleStack } from '@/components/dashboard/schedule-stack';
 import { RiskCard } from '@/components/dashboard/risk-card';
-import { buildPtmPayload, emptyPtmRiskResult } from '@/features/ptm/build-payload';
+import { buildPtmPayload, emptyPtmRiskResult, getPtmReadiness } from '@/features/ptm/build-payload';
+import { userHasIdentity, userToIdentityProfile } from '@/features/identity/user-identity';
 import { ptmRiskService } from '@/services/ptm-risk.service';
 
 export default function HomeScreen() {
@@ -36,7 +37,8 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const today = localDateKey();
-  const identity = useLifestyleStore((state) => state.identity);
+  const identity = userToIdentityProfile(user);
+  const hasIdentity = userHasIdentity(user);
   const weekly = useLifestyleStore((state) => state.weekly);
   const daily = useLifestyleStore((state) => state.daily);
   const weeklyDue = useLifestyleStore(selectWeeklyDue);
@@ -51,10 +53,45 @@ export default function HomeScreen() {
     [identity, daily, weekly],
   );
 
-  const { data: ptmRisk } = useQuery({
+  const ptmReadiness = useMemo(
+    () => getPtmReadiness(ptmPayload),
+    [ptmPayload],
+  );
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log('[ptm-debug] hasIdentity:', hasIdentity);
+    console.log('[ptm-debug] user identity fields:', {
+      age: user?.age, sex: user?.sex,
+      race: user?.race_ethnicity, edu: user?.education, income: user?.income_poverty_ratio,
+      identityComplete: user?.identityComplete,
+    });
+    console.log('[ptm-debug] identity profile:', identity);
+    console.log('[ptm-debug] daily exists:', !!daily, daily ? {
+      date: daily.date,
+      sedentary_minutes: daily.sedentary_minutes,
+      vigorous_work: daily.vigorous_work,
+      calories_day1: daily.calories_day1,
+      mealsCount: daily.meals?.length ?? 0,
+      mealIds: (daily.meals ?? []).map((m) => m.foodId),
+      nutritionManual: daily.nutritionManual,
+      completedAt: daily.completedAt,
+    } : 'null');
+    console.log('[ptm-debug] weekly exists:', !!weekly);
+    console.log('[ptm-debug] payload critical:', {
+      age: ptmPayload.age, sex: ptmPayload.sex,
+      race: ptmPayload.race_ethnicity, edu: ptmPayload.education, income: ptmPayload.income_poverty_ratio,
+      sedentary: ptmPayload.sedentary_minutes, vigorous: ptmPayload.vigorous_work,
+      cal: ptmPayload.calories_day1,
+    });
+    console.log('[ptm-debug] readiness:', ptmReadiness);
+    console.log('[ptm-debug] query enabled:', hasIdentity && ptmReadiness.ready);
+  }, [hasIdentity, user, identity, daily, weekly, ptmPayload, ptmReadiness]);
+
+  const { data: ptmRisk, isLoading: isPtmLoading, isError: isPtmError } = useQuery({
     queryKey: ['ptm-risk', ptmPayload],
     queryFn: () => ptmRiskService.predict(ptmPayload),
-    enabled: Boolean(identity),
+    enabled: hasIdentity && ptmReadiness.ready,
     staleTime: 1000 * 60 * 30,
   });
 
@@ -147,12 +184,17 @@ export default function HomeScreen() {
     return cards;
   }, [dailyDone, recordCount, weekly, weeklyAge, weeklyDue]);
 
+  const heroText = {
+    primary: '#FFFFFF',
+    secondary: 'rgba(255, 255, 255, 0.88)',
+  };
+
   if (isRecordsLoading && isSchedulesLoading) {
     return (
       <View style={styles.container}>
         <View style={[styles.loadingContainer, { paddingTop: topPadding }]}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat dashboard...</Text>
+          <ActivityIndicator color="#FFFFFF" />
+          <Text style={[styles.loadingText, { color: heroText.secondary }]}>Memuat dashboard...</Text>
         </View>
       </View>
     );
@@ -178,7 +220,7 @@ export default function HomeScreen() {
               queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
               return Promise.all([refetchRecords(), refetchSchedules()]).then(() => undefined);
             }}
-            tintColor={colors.primary}
+            tintColor="#FFFFFF"
           />
         }
       >
@@ -197,10 +239,10 @@ export default function HomeScreen() {
               size="lg"
             />
             <View style={styles.headerText}>
-              <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+              <Text style={[styles.userName, { color: heroText.primary }]} numberOfLines={1}>
                 {user?.name ?? 'Pengguna'}
               </Text>
-              <Text style={[styles.todayText, { color: colors.textMuted }]}>{todayLabel}</Text>
+              <Text style={[styles.todayText, { color: heroText.secondary }]}>{todayLabel}</Text>
             </View>
           </TouchableOpacity>
 
@@ -214,22 +256,27 @@ export default function HomeScreen() {
               reminderMutation.mutate();
             }}
             disabled={reminderMutation.isPending}
-            style={[styles.bellBtn, Shadows.sm, { backgroundColor: colors.backgroundCard }]}
+            style={[styles.bellBtn, styles.bellBtnOnGradient]}
             activeOpacity={0.7}
           >
             {reminderMutation.isPending
-              ? <ActivityIndicator size="small" color={colors.primary} />
-              : <Icon name="notifications-outline" size="md" color={colors.text} />}
+              ? <ActivityIndicator size="small" color="#FFFFFF" />
+              : <Icon name="notifications-outline" size="md" color="#FFFFFF" />}
           </TouchableOpacity>
         </View>
 
         <View style={styles.heroContent}>
-          {identity ? (
+          {hasIdentity ? (
             <View style={styles.riskWrap}>
-              <RiskCard data={riskData} />
+              <RiskCard
+                data={riskData}
+                isLoading={isPtmLoading}
+                isError={isPtmError}
+                readinessReason={ptmReadiness.reason}
+              />
             </View>
           ) : null}
-          <ActionCardStack cards={actionCards} />
+          <ActionCardStack cards={actionCards} onGradient />
         </View>
         </View>
 
@@ -275,8 +322,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: BorderRadius.full,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellBtnOnGradient: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   heroContent: {
     paddingHorizontal: Spacing.lg,
