@@ -65,6 +65,8 @@ export const API_ENDPOINTS = {
   aiOcr: '/ai/ocr',
   aiMedicalVision: '/ai/medical-vision',
   healthDailySync: '/health/daily-sync',
+  healthWeeklySync: '/health/weekly-sync',
+  healthQuestionnaireSync: '/health/questionnaire-sync',
   rdsaPendingAsks: '/rdsa/asks/pending',
   rdsaTriggerAsk: '/rdsa/asks/trigger',
   rdsaAckAsk: (askId: string) => `/rdsa/asks/${askId}/ack`,
@@ -72,5 +74,6 @@ export const API_ENDPOINTS = {
   doctorDetail: (id: number) => `/doctors/${id}`,
   doctorRecordTransfer: (doctorId: number) => `/doctors/partners/${doctorId}/record-transfers`,
   ptmRisk: '/health/ptm-risk',
+  appointments: '/appointments',
   chatMessages: (doctorId: number) => `/chat/${doctorId}/messages`,
 } as const;

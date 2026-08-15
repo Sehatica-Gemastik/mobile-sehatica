@@ -109,6 +109,7 @@ export interface Doctor {
   id: number;
   name: string;
   email?: string;
+  phone?: string | null;
   specialty: string;
   isAvailable: boolean;
   avatarInitials: string;

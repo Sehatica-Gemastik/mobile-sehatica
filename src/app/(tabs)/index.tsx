@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleService } from '@/services/schedule.service';
 import { recordsService } from '@/services/records.service';
+import { appointmentsService, PatientAppointment } from '@/services/appointments.service';
 import { scheduleRemindersService } from '@/services/schedule-reminders.service';
 import { dailySyncService } from '@/services/daily-sync.service';
 import { localDateKey } from '@/utils/local-date';
@@ -116,6 +117,22 @@ export default function HomeScreen() {
     queryKey: ['schedules', today],
     queryFn: () => scheduleService.getForDate(today),
   });
+
+  const { data: allAppointments = [] } = useQuery({
+    queryKey: ['patient-appointments'],
+    queryFn: () => appointmentsService.list(),
+    placeholderData: [],
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const todayAppointments = allAppointments
+    .filter((a) => {
+      const t = new Date(a.start).getTime();
+      return t >= todayStart.getTime() && t <= todayEnd.getTime();
+    })
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
   const reminderMutation = useMutation({
     mutationFn: () => scheduleRemindersService.sync(todaySchedule),
@@ -290,6 +307,41 @@ export default function HomeScreen() {
             onItemPress={() => router.push('/(tabs)/schedule')}
             onSeeAll={() => router.push('/(tabs)/schedule')}
           />
+
+          {todayAppointments.length > 0 ? (
+            <View style={styles.appointmentsSection}>
+              <View style={styles.appointmentsSectionHeader}>
+                <Text style={[styles.appointmentsSectionTitle, { color: colors.text }]}>
+                  Janji hari ini
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/schedule')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={[styles.appointmentsSeeAll, { color: colors.primary }]}>Lihat semua</Text>
+                </TouchableOpacity>
+              </View>
+              {todayAppointments.map((item: PatientAppointment) => {
+                const startDate = new Date(item.start);
+                const timeStr = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.appointmentRow, { backgroundColor: colors.backgroundElement }]}
+                    onPress={() => router.push('/(tabs)/schedule')}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.appointmentDot, { backgroundColor: colors.primary }]} />
+                    <View style={styles.appointmentRowBody}>
+                      <Text style={[styles.appointmentRowTitle, { color: colors.text }]} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={[styles.appointmentRowMeta, { color: colors.textMuted }]}>
+                        {timeStr} · {item.doctorName}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </View>
@@ -346,5 +398,38 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl + 4,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxxl,
+    gap: Spacing.xl,
   },
+  appointmentsSection: { gap: 8 },
+  appointmentsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  appointmentsSectionTitle: {
+    fontSize: FontSize.lg,
+    fontFamily: Fonts.bold,
+    letterSpacing: -0.3,
+  },
+  appointmentsSeeAll: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.bold,
+  },
+  appointmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: 12,
+  },
+  appointmentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  appointmentRowBody: { flex: 1, gap: 2 },
+  appointmentRowTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  appointmentRowMeta: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
 });

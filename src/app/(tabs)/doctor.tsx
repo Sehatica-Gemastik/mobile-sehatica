@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator, useColorScheme, Alert,
+  Linking,
 } from 'react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
@@ -22,6 +23,30 @@ export default function DoctorScreen() {
     queryFn: doctorService.getPartners,
     placeholderData: [],
   });
+
+  const normalizePhone = (raw?: string | null) => {
+    const digits = String(raw ?? '').replace(/\D/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('0')) return `62${digits.slice(1)}`;
+    if (digits.startsWith('62')) return digits;
+    return digits;
+  };
+
+  const openWhatsapp = async (doctor: Doctor) => {
+    const phone = normalizePhone(doctor.phone);
+    if (!phone) {
+      Alert.alert('Nomor belum tersedia', 'Nomor WhatsApp dokter belum tersimpan.');
+      return;
+    }
+    const text = encodeURIComponent(`Halo dr. ${doctor.name}, saya ingin konsultasi.`);
+    const url = `https://wa.me/${phone}?text=${text}`;
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      Alert.alert('WhatsApp tidak tersedia', 'Pastikan WhatsApp terpasang di perangkat ini.');
+      return;
+    }
+    await Linking.openURL(url);
+  };
 
   const addPartnerMutation = useMutation({
     mutationFn: doctorService.addPartnerByCode,
@@ -94,30 +119,12 @@ export default function DoctorScreen() {
 
       <View style={styles.actionRow}>
         <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            {
-              backgroundColor: doctor.isAvailable ? colors.primary : colors.backgroundElement,
-              opacity: doctor.isAvailable ? 1 : 0.7,
-            },
-          ]}
+          style={[styles.actionBtn, { backgroundColor: colors.primary }]}
           activeOpacity={0.8}
-          disabled={!doctor.isAvailable}
-          onPress={() => router.push(`/chat/${doctor.id}`)}
+          onPress={() => openWhatsapp(doctor)}
         >
-          <Icon
-            name="chatbubble-outline"
-            size="sm"
-            color={doctor.isAvailable ? colors.onPrimary : colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.actionBtnText,
-              { color: doctor.isAvailable ? colors.onPrimary : colors.textMuted },
-            ]}
-          >
-            Hubungi dokter
-          </Text>
+          <Icon name="logo-whatsapp" size="sm" color={colors.onPrimary} />
+          <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Hubungi</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -138,7 +145,7 @@ export default function DoctorScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Verifikasi partner"
+        title="Dokter partner"
         subtitle={
           partners.length > 0
             ? `${partners.length} partner · ${partners.filter((d) => d.isAvailable).length} online`
@@ -243,15 +250,6 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
-  chatBtn: {
-    paddingVertical: 12,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  chatBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
   actionRow: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     flex: 1,
