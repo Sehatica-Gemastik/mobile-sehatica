@@ -1,16 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, useColorScheme, Alert,
-  useWindowDimensions,
+  RefreshControl, ActivityIndicator, useColorScheme,
+  useWindowDimensions, Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { scheduleService } from '@/services/schedule.service';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { recordsService } from '@/services/records.service';
 import { appointmentsService, PatientAppointment } from '@/services/appointments.service';
-import { scheduleRemindersService } from '@/services/schedule-reminders.service';
 import { dailySyncService } from '@/services/daily-sync.service';
 import { localDateKey } from '@/utils/local-date';
 import { useAuthStore } from '@/store/auth-store';
@@ -22,7 +20,6 @@ import { Colors, Fonts, FontSize, BorderRadius, Spacing, BottomTabInset } from '
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { Icon, InitialsAvatar } from '@/components/ui';
 import { ActionCardStack, ActionCardItem } from '@/components/dashboard/action-card-stack';
-import { ScheduleStack } from '@/components/dashboard/schedule-stack';
 import { RiskCard } from '@/components/dashboard/risk-card';
 import { buildPtmPayload, emptyPtmRiskResult, getPtmReadiness } from '@/features/ptm/build-payload';
 import { userHasIdentity, userToIdentityProfile } from '@/features/identity/user-identity';
@@ -59,36 +56,6 @@ export default function HomeScreen() {
     [ptmPayload],
   );
 
-  useEffect(() => {
-    if (!__DEV__) return;
-    console.log('[ptm-debug] hasIdentity:', hasIdentity);
-    console.log('[ptm-debug] user identity fields:', {
-      age: user?.age, sex: user?.sex,
-      race: user?.race_ethnicity, edu: user?.education, income: user?.income_poverty_ratio,
-      identityComplete: user?.identityComplete,
-    });
-    console.log('[ptm-debug] identity profile:', identity);
-    console.log('[ptm-debug] daily exists:', !!daily, daily ? {
-      date: daily.date,
-      sedentary_minutes: daily.sedentary_minutes,
-      vigorous_work: daily.vigorous_work,
-      calories_day1: daily.calories_day1,
-      mealsCount: daily.meals?.length ?? 0,
-      mealIds: (daily.meals ?? []).map((m) => m.foodId),
-      nutritionManual: daily.nutritionManual,
-      completedAt: daily.completedAt,
-    } : 'null');
-    console.log('[ptm-debug] weekly exists:', !!weekly);
-    console.log('[ptm-debug] payload critical:', {
-      age: ptmPayload.age, sex: ptmPayload.sex,
-      race: ptmPayload.race_ethnicity, edu: ptmPayload.education, income: ptmPayload.income_poverty_ratio,
-      sedentary: ptmPayload.sedentary_minutes, vigorous: ptmPayload.vigorous_work,
-      cal: ptmPayload.calories_day1,
-    });
-    console.log('[ptm-debug] readiness:', ptmReadiness);
-    console.log('[ptm-debug] query enabled:', hasIdentity && ptmReadiness.ready);
-  }, [hasIdentity, user, identity, daily, weekly, ptmPayload, ptmReadiness]);
-
   const { data: ptmRisk, isLoading: isPtmLoading, isError: isPtmError } = useQuery({
     queryKey: ['ptm-risk', ptmPayload],
     queryFn: () => ptmRiskService.predict(ptmPayload),
@@ -109,16 +76,11 @@ export default function HomeScreen() {
   });
 
   const {
-    data: todaySchedule = [],
-    isLoading: isSchedulesLoading,
-    isRefetching: isSchedulesRefetching,
-    refetch: refetchSchedules,
+    data: allAppointments = [],
+    isLoading: isAppointmentsLoading,
+    isRefetching: isAppointmentsRefetching,
+    refetch: refetchAppointments,
   } = useQuery({
-    queryKey: ['schedules', today],
-    queryFn: () => scheduleService.getForDate(today),
-  });
-
-  const { data: allAppointments = [] } = useQuery({
     queryKey: ['patient-appointments'],
     queryFn: () => appointmentsService.list(),
     placeholderData: [],
@@ -133,17 +95,6 @@ export default function HomeScreen() {
       return t >= todayStart.getTime() && t <= todayEnd.getTime();
     })
     .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-  const reminderMutation = useMutation({
-    mutationFn: () => scheduleRemindersService.sync(todaySchedule),
-    onSuccess: (count) => Alert.alert(
-      'Pengingat diperbarui',
-      count > 0
-        ? `${count} aktivitas hari ini akan diingatkan secara lokal.`
-        : 'Tidak ada aktivitas mendatang yang perlu diingatkan.'
-    ),
-    onError: (error: Error) => Alert.alert('Pengingat belum aktif', error.message),
-  });
 
   const todayLabel = new Date().toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -206,7 +157,7 @@ export default function HomeScreen() {
     secondary: 'rgba(255, 255, 255, 0.88)',
   };
 
-  if (isRecordsLoading && isSchedulesLoading) {
+  if (isRecordsLoading && isAppointmentsLoading) {
     return (
       <View style={styles.container}>
         <View style={[styles.loadingContainer, { paddingTop: topPadding }]}>
@@ -217,12 +168,43 @@ export default function HomeScreen() {
     );
   }
 
-  const doneCount = todaySchedule.filter((item) => item.done).length;
-
   const tabBarHeight = BottomTabInset + 52;
-  const scheduleMinHeight = heroHeight > 0
+  const sheetMinHeight = heroHeight > 0
     ? Math.max(240, windowHeight - heroHeight - tabBarHeight - insets.bottom + 8)
     : Math.max(360, windowHeight * 0.52);
+
+  const renderAppointmentRow = (item: PatientAppointment) => {
+    const startDate = new Date(item.start);
+    const endDate = new Date(item.end);
+    const timeStr = `${startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} – ${endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={[styles.appointmentRow, { backgroundColor: colors.backgroundElement }]}
+        onPress={() => router.push('/(tabs)/schedule')}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.appointmentIcon, { backgroundColor: colors.primaryLight }]}>
+          <Icon name="calendar-outline" size="sm" color={colors.primary} />
+        </View>
+        <View style={styles.appointmentRowBody}>
+          <Text style={[styles.appointmentRowTitle, { color: colors.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={[styles.appointmentRowMeta, { color: colors.textMuted }]}>
+            {timeStr} · {item.doctorName}
+          </Text>
+          {item.notes ? (
+            <Text style={[styles.appointmentRowNotes, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.notes}
+            </Text>
+          ) : null}
+        </View>
+        <Icon name="chevron-forward" size="sm" color={colors.textMuted} />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -232,116 +214,85 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRecordsRefetching || isSchedulesRefetching}
+            refreshing={isRecordsRefetching || isAppointmentsRefetching}
             onRefresh={() => {
               queryClient.invalidateQueries({ queryKey: ['ptm-risk'] });
-              return Promise.all([refetchRecords(), refetchSchedules()]).then(() => undefined);
+              return Promise.all([refetchRecords(), refetchAppointments()]).then(() => undefined);
             }}
             tintColor="#FFFFFF"
           />
         }
       >
-        <View
-          onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}
-        >
+        <View onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}>
           <View style={[styles.header, { paddingTop: topPadding }]}>
-          <TouchableOpacity
-            onPress={() => router.push('/account')}
-            activeOpacity={0.8}
-            style={styles.headerLeft}
-          >
-            <InitialsAvatar
-              initials={user?.avatarInitials}
-              name={user?.name}
-              size="lg"
-            />
-            <View style={styles.headerText}>
-              <Text style={[styles.userName, { color: heroText.primary }]} numberOfLines={1}>
-                {user?.name ?? 'Pengguna'}
-              </Text>
-              <Text style={[styles.todayText, { color: heroText.secondary }]}>{todayLabel}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            accessibilityLabel="Aktifkan pengingat jadwal hari ini"
-            onPress={() => {
-              if (todaySchedule.length === 0) {
-                Alert.alert('Belum ada jadwal', 'Tambahkan jadwal sebelum mengaktifkan pengingat.');
-                return;
-              }
-              reminderMutation.mutate();
-            }}
-            disabled={reminderMutation.isPending}
-            style={[styles.bellBtn, styles.bellBtnOnGradient]}
-            activeOpacity={0.7}
-          >
-            {reminderMutation.isPending
-              ? <ActivityIndicator size="small" color="#FFFFFF" />
-              : <Icon name="notifications-outline" size="md" color="#FFFFFF" />}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroContent}>
-          {hasIdentity ? (
-            <View style={styles.riskWrap}>
-              <RiskCard
-                data={riskData}
-                isLoading={isPtmLoading}
-                isError={isPtmError}
-                readinessReason={ptmReadiness.reason}
+            <TouchableOpacity
+              onPress={() => router.push('/account')}
+              activeOpacity={0.8}
+              style={styles.headerLeft}
+            >
+              <InitialsAvatar
+                initials={user?.avatarInitials}
+                name={user?.name}
+                size="lg"
               />
-            </View>
-          ) : null}
-          <ActionCardStack cards={actionCards} onGradient />
-        </View>
+              <View style={styles.headerText}>
+                <Text style={[styles.userName, { color: heroText.primary }]} numberOfLines={1}>
+                  {user?.name ?? 'Pengguna'}
+                </Text>
+                <Text style={[styles.todayText, { color: heroText.secondary }]}>{todayLabel}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.heroContent}>
+            {hasIdentity ? (
+              <View style={styles.riskWrap}>
+                <RiskCard
+                  data={riskData}
+                  isLoading={isPtmLoading}
+                  isError={isPtmError}
+                  readinessReason={ptmReadiness.reason}
+                />
+              </View>
+            ) : null}
+            <ActionCardStack cards={actionCards} onGradient />
+          </View>
         </View>
 
         <View style={[
-          styles.scheduleSheet,
-          { backgroundColor: colors.backgroundCard, minHeight: scheduleMinHeight },
+          styles.appointmentsSheet,
+          { backgroundColor: colors.backgroundCard, minHeight: sheetMinHeight },
         ]}>
-          <ScheduleStack
-            items={todaySchedule}
-            doneCount={doneCount}
-            onItemPress={() => router.push('/(tabs)/schedule')}
-            onSeeAll={() => router.push('/(tabs)/schedule')}
-          />
+          <View style={styles.appointmentsSectionHeader}>
+            <Text style={[styles.appointmentsSectionTitle, { color: colors.text }]}>
+              Janji hari ini
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/schedule')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.appointmentsSeeAll, { color: colors.primary }]}>
+                {todayAppointments.length > 0 ? 'Lihat semua' : 'Buat janji'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          {todayAppointments.length > 0 ? (
-            <View style={styles.appointmentsSection}>
-              <View style={styles.appointmentsSectionHeader}>
-                <Text style={[styles.appointmentsSectionTitle, { color: colors.text }]}>
-                  Janji hari ini
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/schedule')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.appointmentsSeeAll, { color: colors.primary }]}>Lihat semua</Text>
-                </TouchableOpacity>
-              </View>
-              {todayAppointments.map((item: PatientAppointment) => {
-                const startDate = new Date(item.start);
-                const timeStr = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.appointmentRow, { backgroundColor: colors.backgroundElement }]}
-                    onPress={() => router.push('/(tabs)/schedule')}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.appointmentDot, { backgroundColor: colors.primary }]} />
-                    <View style={styles.appointmentRowBody}>
-                      <Text style={[styles.appointmentRowTitle, { color: colors.text }]} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.appointmentRowMeta, { color: colors.textMuted }]}>
-                        {timeStr} · {item.doctorName}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+          {todayAppointments.length === 0 ? (
+            <Pressable
+              onPress={() => router.push('/(tabs)/schedule')}
+              style={styles.emptyAppointments}
+            >
+              <Icon name="calendar-outline" size="lg" color={colors.primary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum ada janji hari ini</Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                Tap untuk buat appointment dengan dokter partner
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.appointmentsList}>
+              {todayAppointments.map(renderAppointmentRow)}
             </View>
-          ) : null}
+          )}
         </View>
       </ScrollView>
     </View>
@@ -370,27 +321,13 @@ const styles = StyleSheet.create({
   headerText: { flex: 1, gap: 2 },
   userName: { fontSize: FontSize.xl, fontFamily: Fonts.bold, letterSpacing: -0.4 },
   todayText: { fontSize: FontSize.xs, fontFamily: Fonts.regular, marginTop: 2 },
-  bellBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellBtnOnGradient: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
   heroContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     gap: Spacing.md,
   },
-  riskWrap: {
-    marginBottom: 0,
-  },
-  scheduleSheet: {
+  riskWrap: { marginBottom: 0 },
+  appointmentsSheet: {
     flexGrow: 1,
     marginTop: -8,
     borderTopLeftRadius: BorderRadius.xxl,
@@ -398,9 +335,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl + 4,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxxl,
-    gap: Spacing.xl,
+    gap: Spacing.md,
   },
-  appointmentsSection: { gap: 8 },
   appointmentsSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -415,21 +351,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontFamily: Fonts.bold,
   },
+  appointmentsList: { gap: 8 },
   appointmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderRadius: BorderRadius.md,
+    gap: 12,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.base,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
-  appointmentDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  appointmentIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
   appointmentRowBody: { flex: 1, gap: 2 },
   appointmentRowTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   appointmentRowMeta: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
+  appointmentRowNotes: { fontSize: FontSize.xs, fontFamily: Fonts.regular, marginTop: 1 },
+  emptyAppointments: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+  },
+  emptyTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
+  emptyDesc: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.regular,
+    textAlign: 'center',
+  },
 });

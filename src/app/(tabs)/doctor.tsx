@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
 import { EmptyState, Icon, InitialsAvatar, ScreenHeader } from '@/components/ui';
+import { ConfirmModal } from '@/components/confirm-modal';
 import { DoctorQrScanner } from '@/components/doctor-qr-scanner';
 import { Doctor } from '@/types';
 
@@ -17,6 +18,7 @@ export default function DoctorScreen() {
   const colors = Colors[scheme];
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<Doctor | null>(null);
 
   const { data: partners = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['doctor-partners'],
@@ -69,21 +71,14 @@ export default function DoctorScreen() {
   const revokePartnerMutation = useMutation({
     mutationFn: doctorService.revokePartner,
     onSuccess: () => {
+      setRevokeTarget(null);
       queryClient.invalidateQueries({ queryKey: ['doctor-partners'] });
+      Alert.alert('Berhasil', 'Dokter partner telah dicabut.');
     },
     onError: (err: any) => {
       Alert.alert('Gagal', err.message ?? 'Tidak bisa mencabut dokter');
     },
   });
-
-  const confirmRevoke = (doctor: Doctor) => Alert.alert(
-    'Cabut dokter ini?',
-    `${doctor.name} tidak akan lagi menjadi partner Anda.`,
-    [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Cabut', style: 'destructive', onPress: () => revokePartnerMutation.mutate(doctor.id) },
-    ]
-  );
 
   const renderPartner = (doctor: Doctor) => (
     <View
@@ -138,7 +133,7 @@ export default function DoctorScreen() {
         <TouchableOpacity
           style={[styles.revokeBtn, { backgroundColor: colors.backgroundElement }]}
           activeOpacity={0.75}
-          onPress={() => confirmRevoke(doctor)}
+          onPress={() => setRevokeTarget(doctor)}
           disabled={revokePartnerMutation.isPending}
           accessibilityLabel={`Cabut ${doctor.name}`}
         >
@@ -231,6 +226,24 @@ export default function DoctorScreen() {
         </ScrollView>
       )}
 
+      <ConfirmModal
+        visible={revokeTarget != null}
+        title="Cabut dokter partner?"
+        message={
+          revokeTarget
+            ? `${revokeTarget.name} tidak akan lagi menjadi partner Anda. Janji yang sudah dibuat tetap tersimpan.`
+            : ''
+        }
+        confirmLabel="Ya, cabut"
+        cancelLabel="Batal"
+        destructive
+        loading={revokePartnerMutation.isPending}
+        onConfirm={() => {
+          if (revokeTarget) revokePartnerMutation.mutate(revokeTarget.id);
+        }}
+        onCancel={() => setRevokeTarget(null)}
+      />
+
       <DoctorQrScanner
         visible={scannerOpen}
         onClose={() => setScannerOpen(false)}
@@ -279,6 +292,14 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  revokeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   actionRow: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     flex: 1,

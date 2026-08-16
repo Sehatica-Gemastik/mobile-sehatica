@@ -7,6 +7,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { EmptyState, Icon, ScreenHeader } from '@/components/ui';
+import { ConfirmModal } from '@/components/confirm-modal';
 import { appointmentsService, PatientAppointment } from '@/services/appointments.service';
 import { doctorService } from '@/services/doctor.service';
 import { Doctor } from '@/types';
@@ -23,6 +24,7 @@ export default function ScheduleScreen() {
   const [notes, setNotes] = useState('');
   const [startInput, setStartInput] = useState('');
   const [endInput, setEndInput] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<PatientAppointment | null>(null);
 
   const { data: appointments = [], isLoading, isRefetching, refetch, error } = useQuery({
     queryKey: ['patient-appointments'],
@@ -60,7 +62,10 @@ export default function ScheduleScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: appointmentsService.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
+    onSuccess: () => {
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
+    },
     onError: (err: any) => Alert.alert('Gagal', err.message ?? 'Tidak bisa menghapus appointment'),
   });
 
@@ -107,14 +112,7 @@ export default function ScheduleScreen() {
   };
 
   const handleDelete = (item: PatientAppointment) => {
-    Alert.alert('Hapus appointment?', item.title, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: () => deleteMutation.mutate(item.id),
-      },
-    ]);
+    setDeleteTarget(item);
   };
 
   const submit = () => {
@@ -408,6 +406,24 @@ export default function ScheduleScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ConfirmModal
+        visible={deleteTarget != null}
+        title="Hapus appointment?"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.title}" akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+            : ''
+        }
+        confirmLabel="Ya, hapus"
+        cancelLabel="Batal"
+        destructive
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </View>
   );
 }
