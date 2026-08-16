@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
   doctorPartners: '/doctors/partners',
   doctorDetail: (id: number) => `/doctors/${id}`,
   doctorRecordTransfer: (doctorId: number) => `/doctors/partners/${doctorId}/record-transfers`,
+  doctorRevokePartner: (doctorId: number) => `/doctors/partners/${doctorId}`,
   ptmRisk: '/health/ptm-risk',
   appointments: '/appointments',
   chatMessages: (doctorId: number) => `/chat/${doctorId}/messages`,
