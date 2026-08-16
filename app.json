@@ -60,6 +60,25 @@
           "modes": ["central"],
           "bluetoothAlwaysPermission": "Sehatica perlu Bluetooth untuk transfer rekam medis ke dokter partner."
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "SehaticaDashboard",
+              "label": "Sehatica Dashboard",
+              "description": "Risiko PTM, status kuisioner, dan janji hari ini.",
+              "minWidth": "250dp",
+              "minHeight": "120dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-preview/sehatica-dashboard.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ],
     "experiments": {
