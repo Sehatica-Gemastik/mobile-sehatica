@@ -41,6 +41,25 @@ export default function DoctorScreen() {
     },
   });
 
+  const revokePartnerMutation = useMutation({
+    mutationFn: doctorService.revokePartner,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['doctor-partners'] });
+    },
+    onError: (err: any) => {
+      Alert.alert('Gagal', err.message ?? 'Tidak bisa mencabut dokter');
+    },
+  });
+
+  const confirmRevoke = (doctor: Doctor) => Alert.alert(
+    'Cabut dokter ini?',
+    `${doctor.name} tidak akan lagi menjadi partner Anda.`,
+    [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Cabut', style: 'destructive', onPress: () => revokePartnerMutation.mutate(doctor.id) },
+    ]
+  );
+
   const renderPartner = (doctor: Doctor) => (
     <View
       key={doctor.id}
@@ -90,6 +109,16 @@ export default function DoctorScreen() {
             {doctor.isAvailable ? 'Online' : 'Offline'}
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.revokeBtn, { backgroundColor: colors.backgroundElement }]}
+          activeOpacity={0.75}
+          onPress={() => confirmRevoke(doctor)}
+          disabled={revokePartnerMutation.isPending}
+          accessibilityLabel={`Cabut ${doctor.name}`}
+        >
+          <Icon name="close-outline" size="sm" color={colors.textMuted} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.actionRow}>
@@ -243,6 +272,10 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: FontSize.xs, fontFamily: Fonts.medium },
+  revokeBtn: {
+    width: 28, height: 28, borderRadius: BorderRadius.full,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
   chatBtn: {
     paddingVertical: 12,
     borderRadius: BorderRadius.md,

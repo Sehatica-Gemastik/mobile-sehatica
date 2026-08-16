@@ -12,4 +12,6 @@ export const doctorService = {
   getById: (id: number) => api.get<Doctor>(API_ENDPOINTS.doctorDetail(id)),
   addPartnerByCode: (code: string) =>
     api.post<AddPartnerResult>(API_ENDPOINTS.doctorPartners, { code }),
+  revokePartner: (id: number) =>
+    api.delete<{ deleted: boolean }>(API_ENDPOINTS.doctorRevokePartner(id)),
 };
