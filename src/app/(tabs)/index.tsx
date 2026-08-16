@@ -24,6 +24,7 @@ import { RiskCard } from '@/components/dashboard/risk-card';
 import { buildPtmPayload, emptyPtmRiskResult, getPtmReadiness } from '@/features/ptm/build-payload';
 import { userHasIdentity, userToIdentityProfile } from '@/features/identity/user-identity';
 import { ptmRiskService } from '@/services/ptm-risk.service';
+import { syncSehaticaWidget } from '@/widgets/sync-widget';
 
 export default function HomeScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -87,14 +88,37 @@ export default function HomeScreen() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-  const todayAppointments = allAppointments
-    .filter((a) => {
-      const t = new Date(a.start).getTime();
-      return t >= todayStart.getTime() && t <= todayEnd.getTime();
-    })
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, [today]);
+  const todayEnd = useMemo(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }, [today]);
+
+  const todayAppointments = useMemo(
+    () => allAppointments
+      .filter((a) => {
+        const t = new Date(a.start).getTime();
+        return t >= todayStart && t <= todayEnd;
+      })
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
+    [allAppointments, todayStart, todayEnd],
+  );
+
+  useEffect(() => {
+    void syncSehaticaWidget({
+      signedIn: true,
+      userName: user?.name ?? null,
+      dailyDone,
+      weeklyDue,
+      ptmRisk: ptmRisk ?? null,
+      appointmentsToday: todayAppointments,
+    });
+  }, [user?.name, dailyDone, weeklyDue, ptmRisk, todayAppointments]);
 
   const todayLabel = new Date().toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long',

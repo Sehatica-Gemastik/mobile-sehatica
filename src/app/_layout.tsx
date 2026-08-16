@@ -107,7 +107,7 @@ export default function RootLayout() {
             <Stack.Screen name="account" options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="account/identity" options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="chat/[doctorId]" options={{ headerShown: false, animation: 'slide_from_right' }} />
-            <Stack.Screen name="doctor/transfer/[doctorId]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="doctor/transfer" options={{ headerShown: false, animation: 'slide_from_right' }} />
           </Stack>
         </AuthGuard>
       </SafeAreaProvider>

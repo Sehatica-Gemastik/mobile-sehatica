@@ -71,6 +71,25 @@ export const recordsService = {
     }
   },
 
+  /** Upload PDF to backend so partner doctors can see it on web */
+  uploadToCloud: async (input: {
+    title: string;
+    fileName: string;
+    fileBase64: string;
+  }) => {
+    return api.post<{
+      id: number;
+      title: string;
+      fileUrl: string | null;
+      fileKey: string | null;
+    }>(API_ENDPOINTS.recordsUpload, {
+      title: input.title,
+      fileName: input.fileName,
+      mimeType: 'application/pdf',
+      fileBase64: input.fileBase64,
+    });
+  },
+
   enrichDocument: async (id: number, fileBase64: string) => {
     const owner = ownerUserId();
     const legacy = await api.post<VisionParseResult>(API_ENDPOINTS.aiOcr, {

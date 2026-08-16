@@ -109,9 +109,9 @@ export default function RecordDetailScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {standard ? (
           <View style={[styles.badgeRow, { backgroundColor: colors.primaryLight }]}>
-            <Icon name="sparkles-outline" size="sm" color={colors.primary} />
+            <Icon name="document-text-outline" size="sm" color={colors.primary} />
             <Text style={[styles.badgeText, { color: colors.primaryDark }]}>
-              Vision AI · {documentKindLabel(standard.documentKind)}
+              {documentKindLabel(standard.documentKind)}
             </Text>
           </View>
         ) : null}
@@ -130,8 +130,10 @@ export default function RecordDetailScreen() {
           </View>
         ) : null}
 
-        <SectionBlock title="Ringkasan" colors={colors}>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>{record.summary ?? '—'}</Text>
+        <SectionBlock title="Detail" colors={colors}>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>
+            {record.summary ?? 'Dokumen PDF rekam medis'}
+          </Text>
           {record.doctorName ? (
             <Text style={[styles.meta, { color: colors.textMuted }]}>Dokter: {record.doctorName}</Text>
           ) : null}
@@ -188,7 +190,7 @@ export default function RecordDetailScreen() {
 
         <View style={styles.actions}>
           <Button
-            label="Unduh ringkasan"
+            label="Unduh teks"
             variant="secondary"
             onPress={() => exportMutation.mutate()}
             loading={exportMutation.isPending}

@@ -8,7 +8,8 @@ import { router } from 'expo-router';
 import { useAuthStore } from '@/store/auth-store';
 import { authService } from '@/services/auth.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { Button, TextField, Icon } from '@/components/ui';
+import { Button, TextField } from '@/components/ui';
+import { SehaticaLogo } from '@/components/brand/sehatica-logo';
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 
@@ -53,10 +54,7 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
-              <Icon name="leaf-outline" size="lg" color={colors.primary} />
-            </View>
-            <Text style={[styles.brand, { color: colors.text }]}>Sehatica</Text>
+            <SehaticaLogo height={40} />
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
               Pantau kesehatan Anda dengan mudah
             </Text>

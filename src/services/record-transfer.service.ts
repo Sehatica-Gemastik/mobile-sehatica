@@ -6,6 +6,7 @@ export type RecordTransferPayload = {
   recordTitle: string;
   fileName: string;
   byteSize: number;
+  fileBase64: string;
   method?: 'bluetooth';
 };
 
@@ -14,6 +15,7 @@ export type RecordTransferResult = {
   doctorId: number;
   recordTitle: string;
   status: string;
+  medicalRecordId?: number | null;
   createdAt: string;
 };
 

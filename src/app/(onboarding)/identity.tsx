@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
-import { Icon } from '@/components/ui';
+import { SehaticaLogo } from '@/components/brand/sehatica-logo';
 import {
   BigNumberField, OptionList, QuestionCopy, QuestionnaireShell,
 } from '@/components/questionnaire';
@@ -104,9 +104,7 @@ export default function IdentityScreen() {
     >
       {step === 0 ? (
         <View style={styles.welcome}>
-          <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
-            <Icon name="person-circle-outline" size="lg" color={colors.primary} />
-          </View>
+          <SehaticaLogo height={44} />
           <QuestionCopy
             title="Kenalan dulu, yuk"
             subtitle="Beberapa pertanyaan singkat supaya kami bisa hitung risiko kesehatan dan rekomendasi yang pas untukmu."

@@ -5,7 +5,6 @@ import {
   Linking,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
 import { doctorService } from '@/services/doctor.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
 import { EmptyState, Icon, InitialsAvatar, ScreenHeader } from '@/components/ui';
@@ -149,18 +148,6 @@ export default function DoctorScreen() {
         >
           <Icon name="logo-whatsapp" size="sm" color={colors.onPrimary} />
           <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Hubungi</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.actionBtnOutline, { borderColor: colors.primary, backgroundColor: colors.backgroundCard }]}
-          activeOpacity={0.8}
-          onPress={() => router.push({
-            pathname: '/doctor/transfer/[doctorId]',
-            params: { doctorId: String(doctor.id), doctorName: doctor.name },
-          })}
-        >
-          <Icon name="bluetooth-outline" size="sm" color={colors.primary} />
-          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Transfer file</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -310,6 +297,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  actionBtnOutline: { borderWidth: 1 },
   actionBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.sm },
 });

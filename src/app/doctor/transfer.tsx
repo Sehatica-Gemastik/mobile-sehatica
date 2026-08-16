@@ -4,10 +4,11 @@ import {
   ActivityIndicator, useColorScheme, Alert, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import type { Device } from 'react-native-ble-plx';
 import { recordsService } from '@/services/records.service';
+import { doctorService } from '@/services/doctor.service';
 import { recordTransferService } from '@/services/record-transfer.service';
 import {
   connectDevice,
@@ -23,34 +24,44 @@ import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/const
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { Button, Icon, surfaceHeaderShell } from '@/components/ui';
-import { MedicalRecord } from '@/types';
+import { Doctor, MedicalRecord } from '@/types';
+import { base64FromBytes } from '@/utils/read-document-file';
 
-export default function DoctorTransferScreen() {
-  const { doctorId: doctorIdParam, doctorName } = useLocalSearchParams<{
-    doctorId: string;
-    doctorName?: string;
-  }>();
-  const doctorId = parseInt(doctorIdParam ?? '', 10);
+export default function RecordTransferScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const topPadding = useScreenTopPadding();
 
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [scanning, setScanning] = useState(false);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [transferring, setTransferring] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const { data: pdfRecords = [], isLoading } = useQuery({
+  const { data: partners = [], isLoading: partnersLoading } = useQuery({
+    queryKey: ['doctor-partners'],
+    queryFn: doctorService.getPartners,
+  });
+
+  const { data: pdfRecords = [], isLoading: recordsLoading } = useQuery({
     queryKey: ['records', 'pdf'],
     queryFn: () => recordsService.listPdfDocuments(),
   });
 
+  useEffect(() => {
+    if (partners.length === 1 && selectedDoctorId == null) {
+      setSelectedDoctorId(partners[0].id);
+    }
+  }, [partners, selectedDoctorId]);
+
   useEffect(() => () => {
     void disconnectDevice(connectedDevice);
   }, [connectedDevice]);
+
+  const selectedDoctor = partners.find((d) => d.id === selectedDoctorId) ?? null;
 
   const startScan = useCallback(async () => {
     if (!isBluetoothSupported()) {
@@ -99,16 +110,20 @@ export default function DoctorTransferScreen() {
   };
 
   const handleTransfer = async () => {
+    if (!selectedDoctorId) {
+      Alert.alert('Pilih dokter', 'Pilih dokter partner tujuan dulu.');
+      return;
+    }
     if (!connectedDevice) {
       Alert.alert('Belum terhubung', 'Scan dan hubungkan perangkat dokter via Bluetooth dulu.');
       return;
     }
-    if (!selectedId) {
+    if (!selectedRecordId) {
       Alert.alert('Pilih dokumen', 'Pilih PDF rekam medis yang akan dikirim.');
       return;
     }
 
-    const record = pdfRecords.find((r) => r.id === selectedId);
+    const record = pdfRecords.find((r) => r.id === selectedRecordId);
     if (!record) return;
 
     setTransferring(true);
@@ -132,16 +147,26 @@ export default function DoctorTransferScreen() {
         (sent, total) => setProgress(total > 0 ? sent / total : 0),
       );
 
-      if (Number.isFinite(doctorId)) {
-        await recordTransferService.logTransfer(doctorId, {
+      let syncedToPortal = false;
+      try {
+        await recordTransferService.logTransfer(selectedDoctorId, {
           recordId: record.id,
           recordTitle: record.title,
           fileName,
           byteSize: file.data.byteLength,
-        }).catch(() => null);
+          fileBase64: base64FromBytes(file.data),
+        });
+        syncedToPortal = true;
+      } catch {
+        syncedToPortal = false;
       }
 
-      Alert.alert('Berhasil', `PDF "${record.title}" dikirim via Bluetooth.`);
+      Alert.alert(
+        'Berhasil',
+        syncedToPortal
+          ? `PDF "${record.title}" dikirim via Bluetooth dan sudah tersedia di portal web dokter.`
+          : `PDF "${record.title}" dikirim via Bluetooth, tapi gagal sync ke portal web. Coba ulang transfer saat online.`,
+      );
       router.back();
     } catch (err) {
       Alert.alert('Gagal', err instanceof Error ? err.message : 'Transfer gagal');
@@ -149,16 +174,6 @@ export default function DoctorTransferScreen() {
       setTransferring(false);
     }
   };
-
-  if (!Number.isFinite(doctorId)) {
-    return (
-      <AppScreen style={styles.container}>
-        <View style={styles.center}>
-          <Text style={{ color: colors.text }}>Dokter tidak valid</Text>
-        </View>
-      </AppScreen>
-    );
-  }
 
   return (
     <AppScreen style={styles.container}>
@@ -170,7 +185,9 @@ export default function DoctorTransferScreen() {
           <View style={styles.headerText}>
             <Text style={[styles.title, { color: colors.text }]}>Transfer file</Text>
             <Text style={[styles.sub, { color: colors.textMuted }]} numberOfLines={1}>
-              Ke {doctorName ?? 'dokter partner'} via Bluetooth
+              {selectedDoctor
+                ? `Ke ${selectedDoctor.name} via Bluetooth`
+                : 'Kirim PDF ke dokter partner via Bluetooth'}
             </Text>
           </View>
           <View style={styles.backBtn} />
@@ -178,7 +195,46 @@ export default function DoctorTransferScreen() {
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Hubungkan Bluetooth</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Pilih dokter partner</Text>
+            {partnersLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : partners.length === 0 ? (
+              <Text style={[styles.sectionHint, { color: colors.textMuted }]}>
+                Belum ada partner. Tambah dokter dulu di tab Dokter.
+              </Text>
+            ) : (
+              partners.map((doctor: Doctor) => {
+                const active = selectedDoctorId === doctor.id;
+                return (
+                  <TouchableOpacity
+                    key={doctor.id}
+                    onPress={() => setSelectedDoctorId(doctor.id)}
+                    style={[
+                      styles.recordRow,
+                      {
+                        borderColor: active ? colors.primary : colors.borderLight,
+                        backgroundColor: active ? colors.primaryLight : colors.backgroundElement,
+                      },
+                    ]}
+                  >
+                    <Icon name="medkit-outline" size="md" color={colors.primary} />
+                    <View style={styles.recordCopy}>
+                      <Text style={[styles.recordTitle, { color: colors.text }]} numberOfLines={1}>
+                        {doctor.name}
+                      </Text>
+                      <Text style={[styles.recordMeta, { color: colors.textMuted }]}>
+                        {doctor.specialty}
+                      </Text>
+                    </View>
+                    {active ? <Icon name="checkmark-circle" size="sm" color={colors.primary} /> : null}
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </View>
+
+          <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Hubungkan Bluetooth</Text>
             <Text style={[styles.sectionHint, { color: colors.textMuted }]}>
               Pastikan perangkat dokter dalam mode pairing / BLE aktif.
             </Text>
@@ -219,8 +275,8 @@ export default function DoctorTransferScreen() {
           </View>
 
           <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Pilih PDF rekam medis</Text>
-            {isLoading ? (
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>3. Pilih PDF rekam medis</Text>
+            {recordsLoading ? (
               <ActivityIndicator color={colors.primary} />
             ) : pdfRecords.length === 0 ? (
               <Text style={[styles.sectionHint, { color: colors.textMuted }]}>
@@ -228,11 +284,11 @@ export default function DoctorTransferScreen() {
               </Text>
             ) : (
               pdfRecords.map((record: MedicalRecord) => {
-                const active = selectedId === record.id;
+                const active = selectedRecordId === record.id;
                 return (
                   <TouchableOpacity
                     key={record.id}
-                    onPress={() => setSelectedId(record.id)}
+                    onPress={() => setSelectedRecordId(record.id)}
                     style={[
                       styles.recordRow,
                       {
@@ -269,7 +325,7 @@ export default function DoctorTransferScreen() {
             label="Kirim via Bluetooth"
             onPress={() => void handleTransfer()}
             loading={transferring}
-            disabled={!connectedDevice || !selectedId || Platform.OS === 'web'}
+            disabled={!selectedDoctorId || !connectedDevice || !selectedRecordId || Platform.OS === 'web'}
             fullWidth
           />
         </ScrollView>
@@ -281,7 +337,6 @@ export default function DoctorTransferScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safe: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

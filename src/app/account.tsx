@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, useColorScheme,
+  Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -12,6 +13,7 @@ import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/them
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 import { Icon, Button, InitialsAvatar, surfaceHeaderShell } from '@/components/ui';
+import { clearSehaticaWidget, requestAddSehaticaWidget } from '@/widgets/sync-widget';
 
 function formatLastActive() {
   return new Date().toLocaleDateString('id-ID', {
@@ -32,10 +34,32 @@ export default function AccountScreen() {
   const identity = userToIdentityProfile(user);
   const identityRows = formatIdentityRows(identity);
   const identityUpdatedAt = formatIdentityUpdatedAt(identity?.completedAt);
+  const [pinningWidget, setPinningWidget] = useState(false);
 
   const handleLogout = async () => {
+    await clearSehaticaWidget();
     await clearAuth();
     router.replace('/(auth)/login');
+  };
+
+  const handleAddWidget = async () => {
+    setPinningWidget(true);
+    try {
+      const ok = await requestAddSehaticaWidget();
+      if (ok) {
+        Alert.alert(
+          'Tambah widget',
+          'Konfirmasi di layar sistem untuk menempelkan widget Sehatica ke home screen.',
+        );
+      } else {
+        Alert.alert(
+          'Tambah widget manual',
+          'Tekan lama di home screen → Widget → pilih Sehatica Dashboard.',
+        );
+      }
+    } finally {
+      setPinningWidget(false);
+    }
   };
 
   return (
@@ -105,6 +129,21 @@ export default function AccountScreen() {
             )}
           </View>
 
+          {Platform.OS === 'android' ? (
+            <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Widget home screen</Text>
+              <Text style={[styles.widgetHint, { color: colors.textMuted }]}>
+                Tampilkan risiko PTM, status kuisioner, dan janji hari ini di layar utama.
+              </Text>
+              <Button
+                label={pinningWidget ? 'Meminta izin...' : 'Tambah widget Sehatica'}
+                onPress={handleAddWidget}
+                loading={pinningWidget}
+                fullWidth
+              />
+            </View>
+          ) : null}
+
           <Button label="Keluar" variant="secondary" onPress={handleLogout} fullWidth />
         </ScrollView>
       </SafeAreaView>
@@ -173,6 +212,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+    gap: Spacing.sm,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -189,6 +229,12 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: FontSize.xs,
     fontFamily: Fonts.regular,
+  },
+  widgetHint: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.regular,
+    lineHeight: 18,
+    marginBottom: 4,
   },
   editBtn: {
     flexDirection: 'row',

@@ -56,6 +56,8 @@ export const API_ENDPOINTS = {
   updateProfile: '/auth/profile',
   dashboard: '/home/dashboard',
   records: '/records',
+  recordsUpload: '/records/upload',
+  recordFile: (id: number) => `/records/${id}/file`,
   recordOcr: '/records/ocr',
   recordVoice: '/records/voice',
   schedules: '/schedules',

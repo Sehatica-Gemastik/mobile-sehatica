@@ -5,7 +5,7 @@ import {
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
 import { Icon, IconName } from '@/components/ui';
 
-export type DocumentProcessingPhase = 'saving' | 'reading' | 'parsing' | 'finishing';
+export type DocumentProcessingPhase = 'saving' | 'reading' | 'finishing';
 export type DocumentProcessingKind = 'pdf' | 'photo';
 
 export type DocumentProcessingState = {
@@ -17,20 +17,18 @@ export type DocumentProcessingState = {
 type StepDef = { phase: DocumentProcessingPhase; label: string; icon: IconName };
 
 const PDF_STEPS: StepDef[] = [
-  { phase: 'saving', label: 'Menyimpan PDF ke perangkat', icon: 'cloud-upload-outline' },
-  { phase: 'reading', label: 'Mengekstrak teks dari PDF', icon: 'document-text-outline' },
-  { phase: 'parsing', label: 'Menganalisis isi dengan AI', icon: 'sparkles-outline' },
-  { phase: 'finishing', label: 'Menyusun format rekam medis standar', icon: 'checkmark-circle-outline' },
+  { phase: 'reading', label: 'Membaca file PDF', icon: 'document-text-outline' },
+  { phase: 'saving', label: 'Menyimpan PDF ke perangkat', icon: 'save-outline' },
+  { phase: 'finishing', label: 'Menyelesaikan', icon: 'checkmark-circle-outline' },
 ];
 
 const PHOTO_STEPS: StepDef[] = [
-  { phase: 'saving', label: 'Menyimpan foto ke perangkat', icon: 'cloud-upload-outline' },
   { phase: 'reading', label: 'Membaca gambar dokumen', icon: 'scan-outline' },
-  { phase: 'parsing', label: 'Vision AI sedang memparse', icon: 'sparkles-outline' },
-  { phase: 'finishing', label: 'Menyusun format rekam medis standar', icon: 'checkmark-circle-outline' },
+  { phase: 'saving', label: 'Menyimpan foto ke perangkat', icon: 'save-outline' },
+  { phase: 'finishing', label: 'Menyelesaikan', icon: 'checkmark-circle-outline' },
 ];
 
-const PHASE_ORDER: DocumentProcessingPhase[] = ['saving', 'reading', 'parsing', 'finishing'];
+const PHASE_ORDER: DocumentProcessingPhase[] = ['reading', 'saving', 'finishing'];
 
 function phaseIndex(phase: DocumentProcessingPhase): number {
   return PHASE_ORDER.indexOf(phase);
@@ -179,7 +177,7 @@ export function DocumentProcessingOverlay({ state }: DocumentProcessingOverlayPr
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             {isOpeningPicker
               ? 'Jangan tutup aplikasi'
-              : 'Mohon tunggu — dokumen diparse ke format rekam medis standar'}
+              : 'Dokumen disimpan lokal — kirim ke dokter via Bluetooth'}
           </Text>
         </View>
       </View>

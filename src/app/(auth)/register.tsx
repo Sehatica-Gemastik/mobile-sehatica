@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { authService } from '@/services/auth.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { Button, TextField, Icon } from '@/components/ui';
+import { SehaticaLogo } from '@/components/brand/sehatica-logo';
 import { AppScreen } from '@/components/screen-background';
 import { useScreenTopPadding } from '@/hooks/use-screen-top-padding';
 
@@ -66,9 +67,7 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
-              <Icon name="leaf-outline" size="lg" color={colors.primary} />
-            </View>
+            <SehaticaLogo height={40} />
             <Text style={[styles.title, { color: colors.text }]}>Buat akun</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Mulai perjalanan kesehatan bersama Sehatica

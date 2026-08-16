@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/store/auth-store';
-import { recordsService, NotMedicalDocumentError } from '@/services/records.service';
+import { recordsService } from '@/services/records.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing } from '@/constants/theme';
 import { MedicalRecordCard } from '@/components/medical-record-card';
 import {
@@ -87,42 +87,28 @@ export default function RecordsScreen() {
     setProcessing({ phase: 'saving', kind: 'pdf', fileName: name ?? 'Dokumen PDF' });
     await waitForUi(120);
 
-    let recordId: number | null = null;
     try {
       setPhase('reading');
-      const { bytes, base64 } = await readDocumentFile(uri);
+      const { bytes } = await readDocumentFile(uri);
+      const title = name?.trim() || 'Dokumen PDF';
 
       setPhase('saving');
-      const record = await recordsService.createDocument({
+      await recordsService.createDocument({
         fileData: bytes,
-        title: name,
+        title,
         cacheUri: uri,
       });
-      recordId = record.id;
       await queryClient.invalidateQueries({ queryKey: ['records'] });
 
-      setPhase('parsing');
-      try {
-        await recordsService.enrichDocument(record.id, base64);
-        setPhase('finishing');
-        await queryClient.invalidateQueries({ queryKey: ['records'] });
-        await delay(500);
-        setProcessing(null);
-        showUserMessage('Berhasil', 'PDF rekam medis tersimpan di perangkat dan berhasil diparse.');
-      } catch (err) {
-        setProcessing(null);
-        if (err instanceof NotMedicalDocumentError) {
-          await recordsService.delete(record.id);
-          await queryClient.invalidateQueries({ queryKey: ['records'] });
-          showUserMessage('Bukan dokumen medis', err.message);
-        } else {
-          const detail = err instanceof Error ? err.message : 'Parsing gagal';
-          showUserMessage('PDF tersimpan', `File ada di SQLite, parsing gagal: ${detail}`);
-        }
-      }
+      setPhase('finishing');
+      await delay(400);
+      setProcessing(null);
+      showUserMessage(
+        'Tersimpan di perangkat',
+        'Dokumen belum dikirim ke portal dokter. Transfer via Bluetooth ke dokter partner agar muncul di web.',
+      );
     } catch (err) {
       setProcessing(null);
-      if (recordId) await recordsService.delete(recordId).catch(() => null);
       showUserMessage('Gagal', err instanceof Error ? err.message : 'PDF tidak dapat disimpan.');
     }
   };
@@ -157,14 +143,26 @@ export default function RecordsScreen() {
         title="Rekam medis"
         subtitle={`${allRecords.length} dokumen PDF tersimpan`}
         right={
-          <TouchableOpacity
-            onPress={handlePickPdf}
-            disabled={isProcessing}
-            style={[styles.addBtn, { backgroundColor: colors.primary, opacity: isProcessing ? 0.6 : 1 }]}
-            activeOpacity={0.8}
-          >
-            <Icon name="add" size="md" color={colors.onPrimary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push('/doctor/transfer')}
+              disabled={isProcessing}
+              style={[styles.transferBtn, { backgroundColor: colors.primaryLight, opacity: isProcessing ? 0.6 : 1 }]}
+              activeOpacity={0.8}
+              accessibilityLabel="Transfer file ke dokter"
+            >
+              <Icon name="bluetooth-outline" size="md" color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePickPdf}
+              disabled={isProcessing}
+              style={[styles.addBtn, { backgroundColor: colors.primary, opacity: isProcessing ? 0.6 : 1 }]}
+              activeOpacity={0.8}
+              accessibilityLabel="Upload PDF"
+            >
+              <Icon name="add" size="md" color={colors.onPrimary} />
+            </TouchableOpacity>
+          </View>
         }
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
@@ -213,7 +211,7 @@ export default function RecordsScreen() {
             <EmptyState
               icon="document-text-outline"
               title="Belum ada dokumen PDF"
-              description="Tap + untuk upload PDF rekam medis. File disimpan aman di SQLite perangkat."
+              description="Tap + untuk upload PDF. Kirim ke dokter lewat tombol Bluetooth di atas."
               actionLabel="Upload PDF"
               onAction={handlePickPdf}
             />
@@ -253,6 +251,11 @@ export default function RecordsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  transferBtn: {
+    width: 40, height: 40, borderRadius: BorderRadius.full,
+    alignItems: 'center', justifyContent: 'center',
+  },
   addBtn: {
     width: 40, height: 40, borderRadius: BorderRadius.full,
     alignItems: 'center', justifyContent: 'center',
