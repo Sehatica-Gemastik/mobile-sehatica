@@ -4,6 +4,7 @@ import { loadLifestyleProfile, saveLifestyleProfile } from '@/features/lifestyle
 import { hydrateDailyNutrition, resolveDailyNutrition } from '@/features/lifestyle/nutrition-engine';
 import { localDateKey } from '@/utils/local-date';
 import { isWeeklyDue } from '@/features/lifestyle/derived';
+import { lifestyleSyncService } from '@/services/lifestyle-sync.service';
 
 type LifestyleStore = LifestyleProfile & {
   isLoading: boolean;
@@ -63,6 +64,7 @@ export const useLifestyleStore = create<LifestyleStore>((set, get) => ({
     };
     await persist(next);
     set(next);
+    void lifestyleSyncService.syncWeekly(next.weekly!).catch(() => null);
   },
 
   saveDaily: async (daily) => {
@@ -73,6 +75,7 @@ export const useLifestyleStore = create<LifestyleStore>((set, get) => ({
     };
     await persist(next);
     set(next);
+    void lifestyleSyncService.syncDailyQuestionnaire(normalized, next.weekly).catch(() => null);
   },
 }));
 
