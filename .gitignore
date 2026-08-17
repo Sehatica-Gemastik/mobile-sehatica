@@ -43,6 +43,10 @@ yarn-error.*
 /ios
 /android
 
+# local expo module build output (keep source in modules/)
+modules/**/android/build/
+modules/**/android/.cxx/
+modules/**/.gradle/
 
 # tests
 /test-results
