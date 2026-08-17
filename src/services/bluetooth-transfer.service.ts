@@ -1,157 +1,131 @@
 import { Platform, PermissionsAndroid } from 'react-native';
-import { BleManager, Device, State } from 'react-native-ble-plx';
+import * as FileSystem from 'expo-file-system/legacy';
+import {
+  getPairedBluetoothDevices,
+  scanNearbyBluetoothDevices,
+  sendFileToBluetoothDevice,
+  type PairedBluetoothDevice,
+} from 'sehatica-bluetooth';
 import { base64FromBytes } from '@/utils/read-document-file';
 
-/** Nordic UART service — common BLE serial profile for file chunks */
-export const SEHATICA_BLE_SERVICE = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
-export const SEHATICA_BLE_TX_CHAR = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E';
-
-const CHUNK_SIZE = 400;
-const WRITE_DELAY_MS = 25;
-
-let manager: BleManager | null = null;
-
-function getManager(): BleManager {
-  if (!manager) manager = new BleManager();
-  return manager;
-}
-
-export type ScannedDevice = {
-  id: string;
-  name: string;
-  rssi: number | null;
+export type ScannedDevice = PairedBluetoothDevice & {
+  paired: boolean;
+  nearby: boolean;
 };
 
 export function isBluetoothSupported(): boolean {
-  return Platform.OS === 'ios' || Platform.OS === 'android';
+  return Platform.OS === 'android';
+}
+
+export function isLikelyComputerReceiver(name: string): boolean {
+  return /macbook|macintosh|\bimac\b|\bmac\b|windows|laptop|pc\b/i.test(name);
+}
+
+function mapDevice(device: PairedBluetoothDevice): ScannedDevice {
+  return {
+    ...device,
+    paired: device.paired === '1',
+    nearby: device.nearby === '1',
+  };
+}
+
+function mergeDevices(list: ScannedDevice[]): ScannedDevice[] {
+  const byAddress = new Map<string, ScannedDevice>();
+  for (const device of list) {
+    const prev = byAddress.get(device.address);
+    if (!prev) {
+      byAddress.set(device.address, device);
+      continue;
+    }
+    byAddress.set(device.address, {
+      ...prev,
+      ...device,
+      name: device.name && device.name !== device.address ? device.name : prev.name,
+      paired: prev.paired || device.paired,
+      nearby: prev.nearby || device.nearby,
+    });
+  }
+  return [...byAddress.values()].sort((a, b) => {
+    if (a.nearby !== b.nearby) return a.nearby ? -1 : 1;
+    if (a.paired !== b.paired) return a.paired ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export async function requestBluetoothPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
+  if (Platform.OS !== 'android') return false;
 
+  const permissions: (typeof PermissionsAndroid.PERMISSIONS)[keyof typeof PermissionsAndroid.PERMISSIONS][] = [];
   if (Platform.Version >= 31) {
-    const results = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN!,
+    permissions.push(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT!,
-    ]);
-    return Object.values(results).every((v) => v === PermissionsAndroid.RESULTS.GRANTED);
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN!,
+    );
   }
+  permissions.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!);
 
-  const location = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!
-  );
-  return location === PermissionsAndroid.RESULTS.GRANTED;
+  const results = await PermissionsAndroid.requestMultiple(permissions);
+  if (Platform.Version >= 31) {
+    return (
+      results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT!] === PermissionsAndroid.RESULTS.GRANTED
+      && results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN!] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  }
+  return results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!] === PermissionsAndroid.RESULTS.GRANTED;
 }
 
-export async function ensureBluetoothOn(): Promise<void> {
-  const ble = getManager();
-  const state = await ble.state();
-  if (state === State.PoweredOn) return;
-  if (state === State.PoweredOff) {
-    throw new Error('Nyalakan Bluetooth di pengaturan perangkat.');
+export async function listPairedDevices(): Promise<ScannedDevice[]> {
+  const granted = await requestBluetoothPermissions();
+  if (!granted) {
+    throw new Error('Izin Bluetooth dan lokasi diperlukan untuk melihat perangkat.');
   }
-  throw new Error('Bluetooth belum siap. Coba lagi sebentar.');
+  const paired = await getPairedBluetoothDevices();
+  return mergeDevices(paired.map(mapDevice));
 }
 
-export function scanDevices(
-  onDevice: (device: ScannedDevice) => void,
-  durationMs = 8000,
-): { stop: () => void; done: Promise<void> } {
-  const ble = getManager();
-  const seen = new Set<string>();
-  let stopped = false;
+export async function scanActiveDevices(
+  onDevice?: (devices: ScannedDevice[]) => void,
+): Promise<ScannedDevice[]> {
+  const granted = await requestBluetoothPermissions();
+  if (!granted) {
+    throw new Error('Izin Bluetooth dan lokasi diperlukan untuk scan perangkat.');
+  }
 
-  void ble.startDeviceScan(null, { allowDuplicates: false }, (error, device) => {
-    if (stopped || error || !device?.id) return;
-    if (seen.has(device.id)) return;
-    seen.add(device.id);
-
-    const name = device.name ?? device.localName ?? 'Perangkat tanpa nama';
-    onDevice({ id: device.id, name, rssi: device.rssi });
+  let current: ScannedDevice[] = [];
+  const scanned = await scanNearbyBluetoothDevices(12000, (device) => {
+    current = mergeDevices([...current, mapDevice(device)]);
+    onDevice?.(current);
   });
+  return mergeDevices(scanned.map(mapDevice));
+}
 
-  const done = new Promise<void>((resolve) => {
-    setTimeout(() => {
-      stopped = true;
-      void ble.stopDeviceScan().finally(resolve);
-    }, durationMs);
+async function writeTempPdf(fileName: string, data: Uint8Array): Promise<string> {
+  const dir = FileSystem.cacheDirectory;
+  if (!dir) throw new Error('Cache tidak tersedia untuk transfer file.');
+  const safeName = fileName.replace(/[^\w.-]+/g, '_') || 'rekam-medis.pdf';
+  const uri = `${dir}${safeName}`;
+  await FileSystem.writeAsStringAsync(uri, base64FromBytes(data), {
+    encoding: FileSystem.EncodingType.Base64,
   });
-
-  return {
-    stop: () => {
-      stopped = true;
-      void ble.stopDeviceScan();
-    },
-    done,
-  };
+  return uri;
 }
 
-export async function connectDevice(deviceId: string): Promise<Device> {
-  const ble = getManager();
-  const device = await ble.connectToDevice(deviceId, { timeout: 12000 });
-  await device.discoverAllServicesAndCharacteristics();
-  return device;
-}
-
-export async function disconnectDevice(device: Device | null): Promise<void> {
-  if (!device) return;
-  try {
-    await device.cancelConnection();
-  } catch {
-    // already disconnected
-  }
-}
-
-async function writeLine(device: Device, line: string): Promise<void> {
-  const payload = base64FromBytes(new TextEncoder().encode(line));
-  await device.writeCharacteristicWithResponseForService(
-    SEHATICA_BLE_SERVICE,
-    SEHATICA_BLE_TX_CHAR,
-    payload,
-  );
-  await delay(WRITE_DELAY_MS);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export type TransferFilePayload = {
-  recordId: number;
-  title: string;
+export async function sendPdfToPairedDevice(input: {
+  address: string;
   fileName: string;
   mimeType: string;
   data: Uint8Array;
-};
-
-export async function sendRecordFile(
-  device: Device,
-  file: TransferFilePayload,
-  onProgress?: (sent: number, total: number) => void,
-): Promise<void> {
-  const meta = {
-    recordId: file.recordId,
-    title: file.title,
-    fileName: file.fileName,
-    mimeType: file.mimeType,
-    size: file.data.byteLength,
-  };
-
-  await writeLine(device, `SEHATICA_META:${JSON.stringify(meta)}`);
-
-  const total = file.data.byteLength;
-  let sent = 0;
-  while (sent < total) {
-    const chunk = file.data.subarray(sent, sent + CHUNK_SIZE);
-    await writeLine(device, `SEHATICA_DATA:${base64FromBytes(chunk)}`);
-    sent += chunk.byteLength;
-    onProgress?.(sent, total);
+}): Promise<void> {
+  if (Platform.OS !== 'android') {
+    throw new Error('Transfer Bluetooth hanya tersedia di Android.');
   }
 
-  await writeLine(device, 'SEHATICA_END');
-}
+  const granted = await requestBluetoothPermissions();
+  if (!granted) {
+    throw new Error('Izin Bluetooth diperlukan untuk transfer file.');
+  }
 
-export function destroyBluetoothManager(): void {
-  manager?.destroy();
-  manager = null;
+  const fileUri = await writeTempPdf(input.fileName, input.data);
+  const contentUri = await FileSystem.getContentUriAsync(fileUri);
+  await sendFileToBluetoothDevice(input.address, contentUri, input.mimeType);
 }

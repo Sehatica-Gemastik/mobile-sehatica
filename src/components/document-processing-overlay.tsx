@@ -177,7 +177,7 @@ export function DocumentProcessingOverlay({ state }: DocumentProcessingOverlayPr
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             {isOpeningPicker
               ? 'Jangan tutup aplikasi'
-              : 'Dokumen disimpan lokal — kirim ke dokter via Bluetooth'}
+              : 'Dokumen disimpan lokal. Kirim ke dokter via Bluetooth'}
           </Text>
         </View>
       </View>

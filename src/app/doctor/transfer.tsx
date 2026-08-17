@@ -6,18 +6,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import type { Device } from 'react-native-ble-plx';
 import { recordsService } from '@/services/records.service';
 import { doctorService } from '@/services/doctor.service';
 import { recordTransferService } from '@/services/record-transfer.service';
 import {
-  connectDevice,
-  disconnectDevice,
-  ensureBluetoothOn,
   isBluetoothSupported,
-  requestBluetoothPermissions,
-  scanDevices,
-  sendRecordFile,
+  isLikelyComputerReceiver,
+  listPairedDevices,
+  scanActiveDevices,
+  sendPdfToPairedDevice,
   type ScannedDevice,
 } from '@/services/bluetooth-transfer.service';
 import { Colors, Fonts, FontSize, BorderRadius, Spacing, Shadows } from '@/constants/theme';
@@ -33,13 +30,12 @@ export default function RecordTransferScreen() {
   const topPadding = useScreenTopPadding();
 
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<ScannedDevice | null>(null);
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
-  const [scanning, setScanning] = useState(false);
-  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
-  const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [loadingDevices, setLoadingDevices] = useState(false);
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [transferring, setTransferring] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
 
   const { data: partners = [], isLoading: partnersLoading } = useQuery({
     queryKey: ['doctor-partners'],
@@ -57,65 +53,70 @@ export default function RecordTransferScreen() {
     }
   }, [partners, selectedDoctorId]);
 
-  useEffect(() => () => {
-    void disconnectDevice(connectedDevice);
-  }, [connectedDevice]);
-
-  const selectedDoctor = partners.find((d) => d.id === selectedDoctorId) ?? null;
-
-  const startScan = useCallback(async () => {
+  const loadDevices = useCallback(async () => {
     if (!isBluetoothSupported()) {
-      Alert.alert('Tidak didukung', 'Transfer Bluetooth hanya tersedia di aplikasi Android/iOS.');
+      Alert.alert('Tidak didukung', 'Transfer Bluetooth hanya tersedia di Android.');
       return;
     }
 
-    const granted = await requestBluetoothPermissions();
-    if (!granted) {
-      Alert.alert('Izin ditolak', 'Izin Bluetooth diperlukan untuk transfer file.');
-      return;
-    }
-
+    setLoadingDevices(true);
     try {
-      await ensureBluetoothOn();
-    } catch (err) {
-      Alert.alert('Bluetooth', err instanceof Error ? err.message : 'Bluetooth tidak siap');
-      return;
-    }
-
-    setDevices([]);
-    setScanning(true);
-    const scan = scanDevices((device) => {
-      setDevices((prev) => {
-        if (prev.some((d) => d.id === device.id)) return prev;
-        return [...prev, device].sort((a, b) => (b.rssi ?? -100) - (a.rssi ?? -100));
+      const paired = await listPairedDevices();
+      setDevices(paired);
+      setSelectedDevice((current) => {
+        if (current && paired.some((item) => item.address === current.address)) return current;
+        return paired.length === 1 ? paired[0] : null;
       });
-    });
-
-    await scan.done;
-    setScanning(false);
+    } catch (err) {
+      Alert.alert('Gagal', err instanceof Error ? err.message : 'Tidak bisa memuat perangkat Bluetooth');
+    } finally {
+      setLoadingDevices(false);
+    }
   }, []);
 
-  const handleConnect = async (deviceId: string) => {
-    setConnectingId(deviceId);
-    try {
-      await disconnectDevice(connectedDevice);
-      const device = await connectDevice(deviceId);
-      setConnectedDevice(device);
-      Alert.alert('Terhubung', 'Bluetooth siap untuk transfer file.');
-    } catch (err) {
-      Alert.alert('Gagal', err instanceof Error ? err.message : 'Tidak bisa terhubung');
-    } finally {
-      setConnectingId(null);
+  const scanDevices = useCallback(async () => {
+    if (!isBluetoothSupported()) {
+      Alert.alert('Tidak didukung', 'Transfer Bluetooth hanya tersedia di Android.');
+      return;
     }
-  };
+
+    setLoadingDevices(true);
+    try {
+      const found = await scanActiveDevices((partial) => {
+        setDevices(partial);
+      });
+      setDevices(found);
+      setSelectedDevice((current) => {
+        if (current && found.some((item) => item.address === current.address)) return current;
+        const nearby = found.find((item) => item.nearby);
+        return nearby ?? (found.length === 1 ? found[0] : null);
+      });
+      if (found.length === 0) {
+        Alert.alert(
+          'Tidak ada perangkat aktif',
+          'Nyalakan Bluetooth dan lokasi di HP ini. Di perangkat tujuan, nyalakan Bluetooth dan buat terlihat. MacBook tidak bisa menerima file dari Android.',
+        );
+      }
+    } catch (err) {
+      Alert.alert('Gagal', err instanceof Error ? err.message : 'Scan Bluetooth gagal');
+    } finally {
+      setLoadingDevices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDevices();
+  }, [loadDevices]);
+
+  const selectedDoctor = partners.find((d) => d.id === selectedDoctorId) ?? null;
 
   const handleTransfer = async () => {
     if (!selectedDoctorId) {
       Alert.alert('Pilih dokter', 'Pilih dokter partner tujuan dulu.');
       return;
     }
-    if (!connectedDevice) {
-      Alert.alert('Belum terhubung', 'Scan dan hubungkan perangkat dokter via Bluetooth dulu.');
+    if (!selectedDevice) {
+      Alert.alert('Pilih perangkat', 'Scan lalu pilih perangkat Bluetooth yang aktif.');
       return;
     }
     if (!selectedRecordId) {
@@ -127,7 +128,7 @@ export default function RecordTransferScreen() {
     if (!record) return;
 
     setTransferring(true);
-    setProgress(0);
+    setProgressLabel('Menyiapkan PDF...');
     try {
       const file = await recordsService.getFile(record.id);
       if (!file || !file.mime.includes('pdf')) {
@@ -135,18 +136,23 @@ export default function RecordTransferScreen() {
       }
 
       const fileName = `${record.title.replace(/[^\w.-]+/g, '_')}.pdf`;
-      await sendRecordFile(
-        connectedDevice,
-        {
-          recordId: record.id,
-          title: record.title,
-          fileName,
-          mimeType: 'application/pdf',
-          data: file.data,
-        },
-        (sent, total) => setProgress(total > 0 ? sent / total : 0),
-      );
+      const skipNearbySend = isLikelyComputerReceiver(selectedDevice.name);
 
+      if (!skipNearbySend) {
+        setProgressLabel(`Mengirim ke ${selectedDevice.name}...`);
+        try {
+          await sendPdfToPairedDevice({
+            address: selectedDevice.address,
+            fileName,
+            mimeType: 'application/pdf',
+            data: file.data,
+          });
+        } catch {
+          // portal sync still proceeds
+        }
+      }
+
+      setProgressLabel('Mengirim ke portal dokter...');
       let syncedToPortal = false;
       try {
         await recordTransferService.logTransfer(selectedDoctorId, {
@@ -161,17 +167,22 @@ export default function RecordTransferScreen() {
         syncedToPortal = false;
       }
 
+      if (!syncedToPortal) {
+        throw new Error('Gagal mengirim ke portal web dokter. Coba ulang saat online.');
+      }
+
       Alert.alert(
-        'Berhasil',
-        syncedToPortal
-          ? `PDF "${record.title}" dikirim via Bluetooth dan sudah tersedia di portal web dokter.`
-          : `PDF "${record.title}" dikirim via Bluetooth, tapi gagal sync ke portal web. Coba ulang transfer saat online.`,
+        'Terkirim ke portal dokter',
+        skipNearbySend
+          ? `Mac/laptop tidak bisa menerima file Bluetooth dari Android. PDF "${record.title}" sudah masuk portal web dokter.`
+          : `PDF "${record.title}" sudah masuk portal web dokter. Jika tujuan HP Android, terima file di notifikasi Bluetooth.`,
       );
       router.back();
     } catch (err) {
       Alert.alert('Gagal', err instanceof Error ? err.message : 'Transfer gagal');
     } finally {
       setTransferring(false);
+      setProgressLabel('');
     }
   };
 
@@ -234,44 +245,45 @@ export default function RecordTransferScreen() {
           </View>
 
           <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Hubungkan Bluetooth</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Pilih perangkat Bluetooth</Text>
             <Text style={[styles.sectionHint, { color: colors.textMuted }]}>
-              Pastikan perangkat dokter dalam mode pairing / BLE aktif.
+              Scan perangkat aktif di sekitar. Kirim file Bluetooth hanya ke HP Android. MacBook/iPhone tidak bisa menerima file dari Android; dokumen tetap masuk portal web dokter.
             </Text>
             <Button
-              label={scanning ? 'Memindai…' : connectedDevice ? 'Scan ulang perangkat' : 'Scan perangkat'}
+              label={loadingDevices ? 'Memindai...' : 'Scan perangkat aktif'}
               variant="secondary"
-              onPress={() => void startScan()}
-              loading={scanning}
+              onPress={() => void scanDevices()}
+              loading={loadingDevices}
               fullWidth
             />
-            {connectedDevice ? (
-              <View style={[styles.connectedPill, { backgroundColor: colors.primaryLight }]}>
-                <Icon name="bluetooth" size="sm" color={colors.primary} />
-                <Text style={[styles.connectedText, { color: colors.primaryDark }]}>
-                  Terhubung ke {connectedDevice.name ?? connectedDevice.id}
-                </Text>
-              </View>
-            ) : null}
-            {devices.map((device) => (
-              <TouchableOpacity
-                key={device.id}
-                onPress={() => void handleConnect(device.id)}
-                disabled={connectingId === device.id}
-                style={[styles.deviceRow, { borderColor: colors.borderLight }]}
-              >
-                <Icon name="bluetooth-outline" size="md" color={colors.primary} />
-                <View style={styles.deviceCopy}>
-                  <Text style={[styles.deviceName, { color: colors.text }]}>{device.name}</Text>
-                  <Text style={[styles.deviceMeta, { color: colors.textMuted }]}>
-                    {device.rssi != null ? `${device.rssi} dBm` : 'Sinyal —'}
-                  </Text>
-                </View>
-                {connectingId === device.id
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Icon name="chevron-forward" size="sm" color={colors.textMuted} />}
-              </TouchableOpacity>
-            ))}
+            {devices.map((device) => {
+              const active = selectedDevice?.address === device.address;
+              const status = [
+                device.nearby ? 'Aktif' : null,
+                device.paired ? 'Terpasang' : null,
+                isLikelyComputerReceiver(device.name) ? 'Tidak bisa terima file' : null,
+              ].filter(Boolean).join(' · ');
+              return (
+                <TouchableOpacity
+                  key={device.address}
+                  onPress={() => setSelectedDevice(device)}
+                  style={[
+                    styles.recordRow,
+                    {
+                      borderColor: active ? colors.primary : colors.borderLight,
+                      backgroundColor: active ? colors.primaryLight : colors.backgroundElement,
+                    },
+                  ]}
+                >
+                  <Icon name="bluetooth-outline" size="md" color={colors.primary} />
+                  <View style={styles.recordCopy}>
+                    <Text style={[styles.recordTitle, { color: colors.text }]}>{device.name}</Text>
+                    <Text style={[styles.recordMeta, { color: colors.textMuted }]}>{status}</Text>
+                  </View>
+                  {active ? <Icon name="checkmark-circle" size="sm" color={colors.primary} /> : null}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={[styles.section, Shadows.sm, { backgroundColor: colors.backgroundCard }]}>
@@ -313,11 +325,9 @@ export default function RecordTransferScreen() {
             )}
           </View>
 
-          {transferring ? (
+          {transferring && progressLabel ? (
             <View style={[styles.progressWrap, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.progressText, { color: colors.text }]}>
-                Mengirim… {Math.round(progress * 100)}%
-              </Text>
+              <Text style={[styles.progressText, { color: colors.text }]}>{progressLabel}</Text>
             </View>
           ) : null}
 
@@ -325,7 +335,7 @@ export default function RecordTransferScreen() {
             label="Kirim via Bluetooth"
             onPress={() => void handleTransfer()}
             loading={transferring}
-            disabled={!selectedDoctorId || !connectedDevice || !selectedRecordId || Platform.OS === 'web'}
+            disabled={!selectedDoctorId || !selectedDevice || !selectedRecordId || Platform.OS === 'web'}
             fullWidth
           />
         </ScrollView>
@@ -351,25 +361,6 @@ const styles = StyleSheet.create({
   section: { borderRadius: BorderRadius.xl, padding: Spacing.base, gap: Spacing.sm },
   sectionTitle: { fontSize: FontSize.sm, fontFamily: Fonts.bold },
   sectionHint: { fontSize: FontSize.xs, lineHeight: 16, fontFamily: Fonts.regular },
-  connectedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-  },
-  connectedText: { fontSize: FontSize.xs, fontFamily: Fonts.medium, flex: 1 },
-  deviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  deviceCopy: { flex: 1, gap: 2 },
-  deviceName: { fontSize: FontSize.sm, fontFamily: Fonts.medium },
-  deviceMeta: { fontSize: FontSize.xs, fontFamily: Fonts.regular },
   recordRow: {
     flexDirection: 'row',
     alignItems: 'center',
